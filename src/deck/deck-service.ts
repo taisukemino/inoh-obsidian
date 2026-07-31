@@ -16,7 +16,8 @@ const DECK_CARD_SELECT = `
     definition,
     example_sentence,
     phonetic,
-    difficulty_level
+    difficulty_level,
+    word_audio_path
   )
 `;
 

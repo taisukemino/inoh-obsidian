@@ -5,6 +5,12 @@
 export const SUPABASE_URL = "https://fsgiabbxanlcaqpgrrki.supabase.co";
 export const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_DvcLzEYwjUKsuGtzSJbivA_FLaRrKnh";
 
+/** The Inoh web app (Expo web export). Word detail lives at /word/<dictionaryId>. */
+export const WEB_APP_URL = "https://inoh.app";
+
+/** Public storage bucket for word/definition/sentence audio. */
+export const AUDIO_BUCKET_URL = `${SUPABASE_URL}/storage/v1/object/public/audio`;
+
 /**
  * Maximum number of cards a free-plan user can hold across all decks.
  * Enforced server-side by a trigger on `user_cards`. Also the reason the

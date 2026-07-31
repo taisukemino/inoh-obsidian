@@ -13,6 +13,8 @@ export type DictionarySummary = {
   phonetic: string | null;
   /** CEFR difficulty: 1=A1 … 6=C2. */
   difficulty_level: number | null;
+  /** Path inside the public audio bucket; may be missing in pre-audio caches. */
+  word_audio_path?: string | null;
 };
 
 /** A card in the user's deck, joined with its dictionary entry. */

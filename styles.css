@@ -36,6 +36,21 @@ body {
 .inoh-tooltip-word {
   font-weight: var(--font-bold);
   color: var(--text-normal);
+  text-decoration: none;
+}
+
+.inoh-tooltip-word:hover {
+  color: var(--inoh-brand);
+  text-decoration: underline;
+}
+
+.inoh-tooltip-audio {
+  padding: 2px;
+  color: var(--text-muted);
+}
+
+.inoh-tooltip-audio:hover {
+  color: var(--inoh-brand);
 }
 
 .inoh-tooltip-phonetic {

@@ -1,5 +1,7 @@
 import type { Extension } from "@codemirror/state";
 import { hoverTooltip } from "@codemirror/view";
+import { setIcon } from "obsidian";
+import { AUDIO_BUCKET_URL, WEB_APP_URL } from "../constants";
 import type { DeckCard } from "../types";
 import type { InohHighlighterPlugin } from "./highlight-extension";
 
@@ -34,7 +36,26 @@ function renderCardTooltip(card: DeckCard): HTMLElement {
   root.className = "inoh-tooltip";
 
   const header = root.createDiv({ cls: "inoh-tooltip-header" });
-  header.createSpan({ cls: "inoh-tooltip-word", text: dictionary.word });
+  header.createEl("a", {
+    cls: "inoh-tooltip-word",
+    text: dictionary.word,
+    href: `${WEB_APP_URL}/word/${dictionary.id}`,
+    attr: { target: "_blank", rel: "noopener", "aria-label": "Open in the Inoh web app" },
+  });
+  if (dictionary.word_audio_path) {
+    const audioButton = header.createEl("button", {
+      cls: "inoh-tooltip-audio clickable-icon",
+      attr: { "aria-label": "Play pronunciation" },
+    });
+    setIcon(audioButton, "volume-2");
+    const audioUrl = `${AUDIO_BUCKET_URL}/${dictionary.word_audio_path}`;
+    audioButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      void new Audio(audioUrl).play().catch((error) => {
+        console.error("Inoh: could not play word audio", error);
+      });
+    });
+  }
   if (dictionary.phonetic) {
     header.createSpan({ cls: "inoh-tooltip-phonetic", text: `/${dictionary.phonetic}/` });
   }
