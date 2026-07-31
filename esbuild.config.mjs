@@ -5,13 +5,23 @@ import path from "node:path";
 
 const isProductionBuild = process.argv.includes("production");
 
-// Dev builds go straight into the test vault so the hot-reload plugin picks them up.
-const DEV_PLUGIN_DIR = path.join("test-vault", ".obsidian", "plugins", "inoh");
-const outputDir = isProductionBuild ? "." : DEV_PLUGIN_DIR;
+// Dev builds go straight into a real vault so the hot-reload plugin picks them
+// up. Point OBSIDIAN_VAULT at that vault's root; see the README.
+const vaultPath = process.env.OBSIDIAN_VAULT;
+if (!isProductionBuild && !vaultPath) {
+  console.error(
+    "Set OBSIDIAN_VAULT to your Obsidian vault's path to use `pnpm dev`,\n" +
+      "e.g. OBSIDIAN_VAULT=~/Notes pnpm dev — or run `pnpm build` instead.",
+  );
+  process.exit(1);
+}
+const outputDir = isProductionBuild
+  ? "."
+  : path.join(vaultPath, ".obsidian", "plugins", "inoh");
 
 /**
- * Copies manifest.json and styles.css next to main.js after each build,
- * so the dev plugin folder is always a complete, loadable plugin.
+ * Copies manifest.json and styles.css next to main.js after each dev build,
+ * so the plugin folder in the vault is always complete and loadable.
  */
 const copyPluginAssetsPlugin = {
   name: "copy-plugin-assets",

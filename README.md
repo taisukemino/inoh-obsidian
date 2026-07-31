@@ -26,13 +26,13 @@ Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you wr
 
 ```bash
 pnpm install
-pnpm dev        # watch build into test-vault/.obsidian/plugins/inoh/
+pnpm dev        # watch build into $OBSIDIAN_VAULT/.obsidian/plugins/inoh/
 pnpm test       # vitest — matching engine
 pnpm typecheck  # tsc --noEmit
 pnpm build      # typecheck + minified production build to ./main.js
 ```
 
-Open `test-vault/` in Obsidian (trust it and enable community plugins). The vault ships with the [hot-reload](https://github.com/pjeby/hot-reload) plugin, so the plugin reloads on every rebuild.
+`pnpm dev` writes straight into a vault, so set `OBSIDIAN_VAULT` to that vault's path (`OBSIDIAN_VAULT=~/Notes pnpm dev`). Install [hot-reload](https://github.com/pjeby/hot-reload) in the same vault and the plugin reloads on every rebuild.
 
 ```
 src/
