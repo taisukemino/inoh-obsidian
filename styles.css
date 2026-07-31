@@ -1,19 +1,13 @@
 /* Inoh brand red — matches the iOS app's `colors.red` in src/theme.ts */
 body {
   --inoh-brand: #ff3346;
-  --inoh-brand-rgb: 255, 51, 70;
 }
 
 /* Deck words highlighted in the editor */
-.inoh-deck-word.inoh-underline {
+.inoh-deck-word {
   text-decoration: underline dotted var(--inoh-brand);
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
-}
-
-.inoh-deck-word.inoh-background {
-  background-color: rgba(var(--inoh-brand-rgb), 0.15);
-  border-radius: 2px;
 }
 
 /* Hover tooltip showing the deck card */

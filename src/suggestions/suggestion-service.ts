@@ -25,10 +25,12 @@ export type SuggestionResult = {
 export class SuggestionLimitError extends Error {}
 
 /**
- * MAX_DECK_WORDS in the suggest-deck-words edge function — it rejects larger
- * payloads. Decks can exceed this (Pro plan), so the client caps what it sends.
+ * MAX_DECK_WORDS_PRO in the suggest-deck-words edge function — it rejects
+ * larger payloads. Cards arrive newest-first from DeckService, so both this
+ * cap and the server's free-plan truncation (300) keep the words the user
+ * added most recently.
  */
-const MAX_SUGGESTION_DECK_WORDS = 300;
+const MAX_SUGGESTION_DECK_WORDS = 1_000;
 
 /**
  * Asks the suggest-deck-words edge function where the given text could use a
@@ -47,8 +49,6 @@ export async function requestDeckWordSuggestions(
   selectedText: string,
   deckCards: DeckCard[],
 ): Promise<SuggestionResult> {
-  // Reason: cards arrive newest-first from DeckService, so the cap keeps the
-  // words the user added most recently.
   const deckWords = deckCards.slice(0, MAX_SUGGESTION_DECK_WORDS).map((card) => ({
     word: card.dictionary.word,
     definition: card.dictionary.definition,

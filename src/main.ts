@@ -91,9 +91,9 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     return this.settings.highlightEnabled ? this.matcher : null;
   }
 
-  /** MatcherProvider: highlight mark classes for deck words. */
+  /** MatcherProvider: highlight mark class for deck words. */
   getHighlightClass(): string {
-    return "inoh-deck-word inoh-underline";
+    return "inoh-deck-word";
   }
 
   /** Refetches the deck from Supabase, surfacing errors as Notices. */

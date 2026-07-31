@@ -19,7 +19,7 @@ import type { DeckMatch } from "../types";
 export type MatcherProvider = {
   /** Returns the current matcher, or null when highlighting is off / deck empty. */
   getMatcher(): DeckMatcher | null;
-  /** CSS classes for the highlight marks (style variant comes from settings). */
+  /** CSS class for the highlight marks. */
   getHighlightClass(): string;
 };
 
