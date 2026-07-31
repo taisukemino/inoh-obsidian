@@ -57,3 +57,46 @@ body {
   color: var(--text-faint);
   font-size: var(--font-ui-smaller);
 }
+
+/* Suggestion sidebar */
+.inoh-suggestions-empty,
+.inoh-suggestions-error,
+.inoh-suggestions-quota {
+  padding: 8px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.inoh-suggestions-error {
+  color: var(--text-error);
+}
+
+.inoh-suggestion {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.inoh-suggestion-word {
+  font-weight: var(--font-bold);
+  color: var(--inoh-brand);
+  margin-bottom: 4px;
+}
+
+.inoh-suggestion-diff {
+  font-size: var(--font-ui-small);
+  margin-bottom: 8px;
+}
+
+.inoh-suggestion-original {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.inoh-suggestion-replacement {
+  color: var(--text-normal);
+}
+
+.inoh-suggestion-buttons {
+  display: flex;
+  gap: 8px;
+}

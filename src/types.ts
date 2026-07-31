@@ -41,8 +41,6 @@ export type DeckMatch = {
 
 export type HighlightStyle = "underline" | "background";
 
-export type LlmProvider = "anthropic" | "openai" | "gemini";
-
 export type InohSettings = {
   highlightEnabled: boolean;
   highlightStyle: HighlightStyle;
@@ -50,9 +48,6 @@ export type InohSettings = {
   tolerantMatching: boolean;
   /** null = match against all decks. */
   selectedDeckId: string | null;
-  /** Phase 2 placeholders — surfaced disabled in settings, not used yet. */
-  llmProvider: LlmProvider;
-  llmApiKey: string;
 };
 
 export type DeckCache = {

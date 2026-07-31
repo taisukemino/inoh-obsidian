@@ -12,10 +12,19 @@ import { DeckIndex } from "./matching/deck-index";
 import { DeckMatcher } from "./matching/matcher";
 import { DEFAULT_SETTINGS } from "./settings/settings";
 import { InohSettingsTab } from "./settings/settings-tab";
+import { getParagraphAtCursor } from "./suggestions/paragraph";
+import {
+  requestDeckWordSuggestions,
+  SuggestionLimitError,
+} from "./suggestions/suggestion-service";
+import { SuggestionView, SUGGESTION_VIEW_TYPE } from "./suggestions/suggestion-view";
 import { signOutUser } from "./supabase/auth";
 import { createSupabaseClient } from "./supabase/client";
 import { StatusBar } from "./ui/status-bar";
 import type { DeckCache, InohSettings, PluginData } from "./types";
+
+/** Server-side paragraph limit in the suggest-deck-words edge function. */
+const MAX_SUGGESTION_PARAGRAPH_LENGTH = 2_000;
 
 /**
  * Inoh for Obsidian: highlights words from the user's Inoh vocabulary deck
@@ -60,6 +69,13 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       callback: () => void this.refreshDeck(),
     });
 
+    this.registerView(SUGGESTION_VIEW_TYPE, (leaf) => new SuggestionView(leaf));
+    this.addCommand({
+      id: "suggest-deck-words",
+      name: "Suggest deck words for this paragraph",
+      callback: () => void this.suggestForActiveParagraph(),
+    });
+
     const { data: authListener } = this.supabase.auth.onAuthStateChange((_event, session) => {
       this.currentUserEmail = session?.user.email ?? null;
       this.statusBar.update();
@@ -92,6 +108,60 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   async signOut(): Promise<void> {
     await signOutUser(this.supabase);
     await this.deckService.clear();
+  }
+
+  /** Command: ask the backend where the current paragraph could use a deck word. */
+  private async suggestForActiveParagraph(): Promise<void> {
+    const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+    if (!markdownView?.file) {
+      new Notice("Open a note and put the cursor in a paragraph first.");
+      return;
+    }
+    if (!this.currentUserEmail) {
+      new Notice("Sign in to Inoh first (plugin settings).");
+      return;
+    }
+    const paragraph = getParagraphAtCursor(markdownView.editor);
+    if (!paragraph) {
+      new Notice("Put the cursor inside a paragraph first.");
+      return;
+    }
+    const cards = this.deckService.getCards(this.settings.selectedDeckId);
+    if (cards.length === 0) {
+      new Notice("Your deck is empty or not synced yet.");
+      return;
+    }
+
+    const view = await this.activateSuggestionView();
+    view.setLoading();
+    try {
+      const result = await requestDeckWordSuggestions(
+        this.supabase,
+        paragraph.slice(0, MAX_SUGGESTION_PARAGRAPH_LENGTH),
+        cards,
+      );
+      view.setResults(
+        markdownView.file.path,
+        result.suggestions,
+        result.remainingSuggestionsToday,
+      );
+    } catch (error) {
+      if (error instanceof SuggestionLimitError) {
+        view.setError(error.message);
+        return;
+      }
+      view.setError(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  private async activateSuggestionView(): Promise<SuggestionView> {
+    let leaf = this.app.workspace.getLeavesOfType(SUGGESTION_VIEW_TYPE)[0];
+    if (!leaf) {
+      leaf = this.app.workspace.getRightLeaf(false)!;
+      await leaf.setViewState({ type: SUGGESTION_VIEW_TYPE, active: true });
+    }
+    await this.app.workspace.revealLeaf(leaf);
+    return leaf.view as SuggestionView;
   }
 
   async saveSettings(): Promise<void> {

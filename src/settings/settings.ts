@@ -5,6 +5,4 @@ export const DEFAULT_SETTINGS: InohSettings = {
   highlightStyle: "underline",
   tolerantMatching: false,
   selectedDeckId: null,
-  llmProvider: "anthropic",
-  llmApiKey: "",
 };

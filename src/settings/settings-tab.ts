@@ -1,6 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type InohPlugin from "../main";
-import type { HighlightStyle, LlmProvider } from "../types";
+import type { HighlightStyle } from "../types";
 import { AuthModal } from "./auth-modal";
 
 export class InohSettingsTab extends PluginSettingTab {
@@ -16,7 +16,6 @@ export class InohSettingsTab extends PluginSettingTab {
     this.renderAccountSection();
     this.renderDeckSection();
     this.renderHighlightSection();
-    this.renderAiPlaceholderSection();
   }
 
   private renderAccountSection(): void {
@@ -125,30 +124,4 @@ export class InohSettingsTab extends PluginSettingTab {
       );
   }
 
-  private renderAiPlaceholderSection(): void {
-    new Setting(this.containerEl).setName("AI suggestions (coming soon)").setHeading();
-
-    new Setting(this.containerEl)
-      .setName("Provider")
-      .setDesc("Phase 2: suggest deck words when you write a plain synonym.")
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("anthropic", "Anthropic")
-          .addOption("openai", "OpenAI")
-          .addOption("gemini", "Gemini")
-          .setValue(this.plugin.settings.llmProvider)
-          .setDisabled(true)
-          .onChange(async (value) => {
-            this.plugin.settings.llmProvider = value as LlmProvider;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    new Setting(this.containerEl)
-      .setName("API key")
-      .setDesc("Bring your own key. Not used yet.")
-      .addText((text) => {
-        text.setPlaceholder("sk-…").setValue(this.plugin.settings.llmApiKey).setDisabled(true);
-      });
-  }
 }
