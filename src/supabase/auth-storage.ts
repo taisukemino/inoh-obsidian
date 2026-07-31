@@ -1,12 +1,12 @@
+import type { App } from "obsidian";
+
 /**
- * Supabase auth storage backed by `window.localStorage`.
+ * Supabase auth storage backed by Obsidian's vault-scoped local storage.
  *
  * Sessions deliberately do NOT live in the plugin's data.json: data.json syncs
  * with the vault (Obsidian Sync, iCloud, git), and refresh tokens must stay on
- * this device. localStorage is per-device and per-app, matching how the Inoh
- * Raycast extension scopes its sessions.
- *
- * Keys are prefixed per vault so two vaults on one machine keep separate sessions.
+ * this device. `app.saveLocalStorage` is per-device and already scoped to the
+ * vault, so two vaults on one machine keep separate sessions.
  */
 export type SupabaseAuthStorage = {
   getItem: (key: string) => string | null;
@@ -14,12 +14,16 @@ export type SupabaseAuthStorage = {
   removeItem: (key: string) => void;
 };
 
-export function createAuthStorage(vaultId: string): SupabaseAuthStorage {
-  const prefixKey = (key: string): string => `inoh/${vaultId}/${key}`;
+export function createAuthStorage(app: App): SupabaseAuthStorage {
+  const namespacedKey = (key: string): string => `inoh/${key}`;
 
   return {
-    getItem: (key) => window.localStorage.getItem(prefixKey(key)),
-    setItem: (key, value) => window.localStorage.setItem(prefixKey(key), value),
-    removeItem: (key) => window.localStorage.removeItem(prefixKey(key)),
+    getItem: (key) => {
+      const stored: unknown = app.loadLocalStorage(namespacedKey(key));
+      return typeof stored === "string" ? stored : null;
+    },
+    setItem: (key, value) => app.saveLocalStorage(namespacedKey(key), value),
+    // Obsidian clears the entry when the value is null.
+    removeItem: (key) => app.saveLocalStorage(namespacedKey(key), null),
   };
 }

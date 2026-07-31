@@ -44,7 +44,7 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   override async onload(): Promise<void> {
     await this.loadPluginData();
 
-    this.supabase = createSupabaseClient(this.getVaultId());
+    this.supabase = createSupabaseClient(this.app);
     this.register(() => void this.supabase.auth.stopAutoRefresh());
 
     this.deckService = new DeckService(this.supabase, (cache) => {
@@ -231,11 +231,5 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   /** Single write path for data.json: settings + deck cache, never auth tokens. */
   private async persistData(): Promise<void> {
     await this.saveData({ settings: this.settings, deckCache: this.deckCache });
-  }
-
-  /** Stable per-vault id so two vaults on one machine keep separate sessions. */
-  private getVaultId(): string {
-    const appWithId = this.app as unknown as { appId?: string };
-    return appWithId.appId ?? this.app.vault.getName();
   }
 }
