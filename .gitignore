@@ -1,0 +1,16 @@
+# Build output (production build lands in repo root)
+/main.js
+
+# Dependencies
+node_modules/
+
+# Test vault: keep sample notes, plugin config, and the hot-reload plugin;
+# ignore Obsidian runtime state and our own dev build output
+test-vault/.obsidian/*
+!test-vault/.obsidian/community-plugins.json
+!test-vault/.obsidian/plugins/
+test-vault/.obsidian/plugins/*
+!test-vault/.obsidian/plugins/hot-reload/
+
+# OS
+.DS_Store

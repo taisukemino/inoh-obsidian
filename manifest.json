@@ -1,0 +1,10 @@
+{
+  "id": "inoh",
+  "name": "Inoh",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Highlights words from your Inoh vocabulary deck while you write, so you actually use what you're learning.",
+  "author": "Naka, Inc",
+  "authorUrl": "https://inoh.app",
+  "isDesktopOnly": true
+}

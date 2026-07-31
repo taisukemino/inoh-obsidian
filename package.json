@@ -1,0 +1,36 @@
+{
+  "name": "inoh-obsidian",
+  "version": "0.1.0",
+  "description": "Obsidian plugin that highlights words from your Inoh vocabulary deck while you write",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "pnpm typecheck && node esbuild.config.mjs production",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "vocabulary",
+    "inoh"
+  ],
+  "author": "Naka, Inc",
+  "license": "MIT",
+  "packageManager": "pnpm@10.18.3",
+  "devDependencies": {
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.7",
+    "@types/fast-levenshtein": "^0.0.4",
+    "builtin-modules": "^5.3.0",
+    "esbuild": "^0.28.1",
+    "obsidian": "^1.13.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.83.0",
+    "fast-levenshtein": "^3.0.0"
+  }
+}
