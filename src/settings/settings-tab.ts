@@ -5,7 +5,7 @@ import {
   type SettingDefinition,
   type SettingDefinitionItem,
 } from "obsidian";
-import { WEB_APP_URL } from "../constants";
+import { DISCOVER_URL, WEB_APP_URL } from "../constants";
 import type InohPlugin from "../main";
 import { AuthModal } from "./auth-modal";
 
@@ -25,6 +25,7 @@ export class InohSettingsTab extends PluginSettingTab {
         items: [
           this.getStartedDefinition(),
           this.signedInDefinition(),
+          this.discoverWordsDefinition(),
           this.emptyDeckDefinition(),
         ],
       },
@@ -108,11 +109,6 @@ export class InohSettingsTab extends PluginSettingTab {
       visible: () => !this.isSignedOut(),
       render: (setting) => {
         setting.addButton((button) =>
-          button.setButtonText("Open inoh.app").onClick(() => {
-            window.open(WEB_APP_URL);
-          }),
-        );
-        setting.addButton((button) =>
           button.setButtonText("Refresh deck").onClick(async () => {
             await this.plugin.refreshDeck();
             this.refresh();
@@ -135,6 +131,22 @@ export class InohSettingsTab extends PluginSettingTab {
     };
   }
 
+  /** Own row below the signed-in one; the empty-deck row has its own CTA, so this hides then. */
+  private discoverWordsDefinition(): SettingDefinition {
+    return {
+      name: "Discover words",
+      desc: "Browse words and add them to your deck in the Inoh app.",
+      visible: () => !this.isSignedOut() && this.plugin.deckService.getCards().length > 0,
+      render: (setting) => {
+        setting.addButton((button) =>
+          button.setButtonText("Open inoh.app").onClick(() => {
+            window.open(DISCOVER_URL);
+          }),
+        );
+      },
+    };
+  }
+
   private emptyDeckDefinition(): SettingDefinition {
     return {
       name: "Your deck is empty",
@@ -148,7 +160,7 @@ export class InohSettingsTab extends PluginSettingTab {
             .setButtonText("Open inoh.app")
             .setCta()
             .onClick(() => {
-              window.open(WEB_APP_URL);
+              window.open(DISCOVER_URL);
             }),
         );
       },

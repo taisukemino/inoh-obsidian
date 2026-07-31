@@ -8,6 +8,9 @@ export const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_DvcLzEYwjUKsuGtzSJbivA_F
 /** The Inoh web app (Expo web export). Word detail lives at /word/<dictionaryId>. */
 export const WEB_APP_URL = "https://inoh.app";
 
+/** Where "Open inoh.app" buttons land: the page for finding words to add. */
+export const DISCOVER_URL = `${WEB_APP_URL}/discover`;
+
 /** Public storage bucket for word/definition/sentence audio. */
 export const AUDIO_BUCKET_URL = `${SUPABASE_URL}/storage/v1/object/public/audio`;
 
