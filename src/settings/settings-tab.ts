@@ -1,4 +1,10 @@
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import {
+  App,
+  Notice,
+  PluginSettingTab,
+  type SettingDefinition,
+  type SettingDefinitionItem,
+} from "obsidian";
 import { WEB_APP_URL } from "../constants";
 import type InohPlugin from "../main";
 import { AuthModal } from "./auth-modal";
@@ -11,78 +17,127 @@ export class InohSettingsTab extends PluginSettingTab {
     super(app, plugin);
   }
 
-  display(): void {
-    this.containerEl.empty();
-    this.renderAccountSection();
-    this.renderHighlightSection();
+  override getSettingDefinitions(): SettingDefinitionItem[] {
+    return [
+      {
+        type: "group",
+        heading: "Account",
+        items: [
+          this.getStartedDefinition(),
+          this.signedInDefinition(),
+          this.emptyDeckDefinition(),
+        ],
+      },
+      {
+        type: "group",
+        heading: "Highlighting",
+        items: [
+          {
+            name: "Enable highlighting",
+            desc: "Underline deck words in the editor as you write.",
+            control: { type: "toggle", key: "highlightEnabled" },
+          },
+        ],
+      },
+    ];
   }
 
-  private renderAccountSection(): void {
-    new Setting(this.containerEl).setName("Account").setHeading();
+  override getControlValue(key: string): unknown {
+    return key === "highlightEnabled" ? this.plugin.settings.highlightEnabled : undefined;
+  }
 
-    if (!this.plugin.currentUserEmail) {
-      new Setting(this.containerEl)
-        .setName("Get started")
-        .setDesc(
-          createFragment((fragment) => {
-            fragment.appendText(
-              "Sign in with your email — entering a new email creates an Inoh account automatically. ",
-            );
-            fragment.appendText("You build your vocabulary deck at ");
-            fragment.createEl("a", { text: "inoh.app", href: WEB_APP_URL });
-            fragment.appendText(" and this plugin brings it into your notes.");
-          }),
-        )
-        .addButton((button) =>
+  /** Routed through the plugin so the deck matcher rebuilds and data.json keeps its deck cache. */
+  override async setControlValue(key: string, value: unknown): Promise<void> {
+    if (key !== "highlightEnabled") {
+      return;
+    }
+    this.plugin.settings.highlightEnabled = value === true;
+    await this.plugin.saveSettings();
+  }
+
+  /**
+   * Re-reads the definitions (row names and visibility depend on auth and
+   * deck state) and repaints. `update()` alone only restores the definitions.
+   */
+  private refresh(): void {
+    this.update();
+    this.display();
+  }
+
+  private isSignedOut(): boolean {
+    return !this.plugin.currentUserEmail;
+  }
+
+  private getStartedDefinition(): SettingDefinition {
+    return {
+      name: "Get started",
+      desc: createFragment((fragment) => {
+        fragment.appendText(
+          "Sign in with your email — entering a new email creates an Inoh account automatically. ",
+        );
+        fragment.appendText("You build your vocabulary deck at ");
+        fragment.createEl("a", { text: "inoh.app", href: WEB_APP_URL });
+        fragment.appendText(" and this plugin brings it into your notes.");
+      }),
+      visible: () => this.isSignedOut(),
+      render: (setting) => {
+        setting.addButton((button) =>
           button
             .setButtonText("Sign in or sign up")
             .setCta()
             .onClick(() => {
               new AuthModal(this.app, this.plugin.supabase, () => {
                 void this.plugin.refreshDeck();
-                this.display();
+                this.refresh();
               }).open();
             }),
         );
-      return;
-    }
+      },
+    };
+  }
 
+  private signedInDefinition(): SettingDefinition {
     const fetchedAt = this.plugin.deckService.getFetchedAt();
-    const lastSynced = fetchedAt
-      ? `Deck last synced ${new Date(fetchedAt).toLocaleString()}.`
-      : "Deck not synced yet.";
 
-    new Setting(this.containerEl)
-      .setName(this.plugin.currentUserEmail)
-      .setDesc(lastSynced)
-      .addButton((button) =>
-        button.setButtonText("Refresh deck").onClick(async () => {
-          await this.plugin.refreshDeck();
-          this.display();
-        }),
-      )
-      .addButton((button) =>
-        button
-          .setButtonText("Sign out")
-          .setWarning()
-          .onClick(async () => {
-            try {
-              await this.plugin.signOut();
-            } catch (error) {
-              new Notice(error instanceof Error ? error.message : String(error));
-            }
-            this.display();
+    return {
+      name: this.plugin.currentUserEmail ?? "Signed in",
+      desc: fetchedAt
+        ? `Deck last synced ${new Date(fetchedAt).toLocaleString()}.`
+        : "Deck not synced yet.",
+      visible: () => !this.isSignedOut(),
+      render: (setting) => {
+        setting.addButton((button) =>
+          button.setButtonText("Refresh deck").onClick(async () => {
+            await this.plugin.refreshDeck();
+            this.refresh();
           }),
-      );
+        );
+        setting.addButton((button) =>
+          button
+            .setButtonText("Sign out")
+            .setDestructive()
+            .onClick(async () => {
+              try {
+                await this.plugin.signOut();
+              } catch (error) {
+                new Notice(error instanceof Error ? error.message : String(error));
+              }
+              this.refresh();
+            }),
+        );
+      },
+    };
+  }
 
-    if (this.plugin.deckService.getCards().length === 0) {
-      new Setting(this.containerEl)
-        .setName("Your deck is empty")
-        .setDesc(
-          "Add words to your deck in the Inoh app, then hit Refresh deck. " +
-            "Highlighting and suggestions start working once your deck has words.",
-        )
-        .addButton((button) =>
+  private emptyDeckDefinition(): SettingDefinition {
+    return {
+      name: "Your deck is empty",
+      desc:
+        "Add words to your deck in the Inoh app, then hit Refresh deck. " +
+        "Highlighting and suggestions start working once your deck has words.",
+      visible: () => !this.isSignedOut() && this.plugin.deckService.getCards().length === 0,
+      render: (setting) => {
+        setting.addButton((button) =>
           button
             .setButtonText("Open inoh.app")
             .setCta()
@@ -90,21 +145,7 @@ export class InohSettingsTab extends PluginSettingTab {
               window.open(WEB_APP_URL);
             }),
         );
-    }
+      },
+    };
   }
-
-  private renderHighlightSection(): void {
-    new Setting(this.containerEl).setName("Highlighting").setHeading();
-
-    new Setting(this.containerEl)
-      .setName("Enable highlighting")
-      .setDesc("Underline deck words in the editor as you write.")
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.highlightEnabled).onChange(async (value) => {
-          this.plugin.settings.highlightEnabled = value;
-          await this.plugin.saveSettings();
-        }),
-      );
-  }
-
 }
