@@ -15,7 +15,7 @@ Phase 1 of [PRI-20162]: validate the "surface deck words while writing" workflow
 
 ## AI suggestions
 
-Select text and run **Inoh: Suggest deck words for selection**. The selection (≤2,000 chars) plus your 300 most recently added deck words go to the `suggest-deck-words` Supabase edge function ([inoh-backend]), which prompts OpenAI server-side — no API key in the client. Each suggested phrase gets a wavy underline in the note (a CodeMirror state field; ranges remap through edits and are discarded when the note closes). Hovering shows the deck word, its definition, the original → replacement diff, a one-sentence "why this fits" explanation, and Apply / Dismiss / Dismiss all buttons. The server rejects any suggestion whose replacement doesn't actually use the deck word. Free accounts get 10 suggestions per day; Pro is unlimited.
+Select text and run **Inoh: Suggest deck words for selection**. The selection (≤2,000 chars) plus up to 1,000 of your most recently added deck words go to the `suggest-deck-words` Supabase edge function ([inoh-backend]), which prompts OpenAI server-side — no API key in the client; free-plan requests are truncated to the newest 300 words there. Each suggested phrase gets a wavy underline in the note (a CodeMirror state field; ranges remap through edits and are discarded when the note closes). Hovering shows the deck word, its definition, the original → replacement diff, a one-sentence "why this fits" explanation, and Apply / Dismiss / Dismiss all buttons. The server rejects any suggestion whose replacement doesn't actually use the deck word. Free accounts get 10 suggestions per day; Pro is unlimited.
 
 [inoh-backend]: https://github.com/taisukemino/inoh-backend
 
