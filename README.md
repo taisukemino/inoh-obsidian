@@ -1,23 +1,26 @@
 # Inoh for Obsidian
 
-Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you write, so you actually use what you're learning. Deck words (including inflected forms — *crossed* for *cross*, *went* for *go*) get a dotted underline in the editor; hovering shows the word's definition, phonetic, pronunciation audio, and example sentence. Select a passage and run **Suggest deck words for selection** to get AI suggestions for where a deck word could replace a phrase, applied inline in the note.
+Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you write and suggests places to use them — so you actually use what you're learning.
 
-Phase 1 of [PRI-20162]: validate the "surface deck words while writing" workflow before investing in a browser extension.
+## Features
 
-## How it works
+- **Deck-word highlighting.** Words from your deck get a dotted underline as you write, including inflected forms (*crossed* for *cross*, *went* for *go*) and multi-word idioms (*counted my blessings* for *count one's blessings*, *gave the idea up* for *give up*). Matching is exact against real English forms — *brain* never lights up *brainy*.
+- **Hover to review.** Hovering a highlighted word shows its definition, phonetic, example sentence, and pronunciation audio, with a link to the word in the Inoh app.
+- **AI suggestions.** Select a passage and run **Suggest deck words for selection**. Phrases that could be rewritten with one of your deck words get a wavy underline; hover one to see the deck word, its definition, the rewrite, and a one-sentence explanation of why it fits — then Apply or Dismiss. Free accounts get 10 suggestion requests per day; [Inoh Pro](https://inoh.app) is unlimited.
+- **Works offline.** Your deck is cached locally, so highlighting keeps working without a connection.
 
-- **Sign in** with your Inoh account (email + six-digit code) from the plugin settings or the status bar.
-- Your deck (≤300 cards on the free tier) is fetched wholesale from Supabase and cached in the plugin's `data.json`, so highlighting works instantly on startup and offline. Auth tokens live in `localStorage`, never in the vault.
-- A CodeMirror 6 view plugin scans only the **visible viewport**, debounced 200 ms after the last keystroke. Matching is token-driven: each deck word is expanded into its exact set of surface forms at index time, and each typed token is a map lookup.
-- **Matching is exact against generated inflection sets.** For every deck-word token the index generates its real English forms — regular -s/-es/-ies, -ed (with e-drop and consonant doubling), -ing, f→ves plurals, irregular noun plurals (*criteria*, *knives*), and irregular verb forms (*went*, *swam*). A typed word matches only if it IS one of those forms. There is no prefix/stem fuzziness: *brain* does not match *brainy*, *crossword* does not match *cross*. Comparatives (-er/-est) and derivations (-ly) are deliberately excluded.
-- **Idioms** (roughly 12k dictionary entries are multi-word) match per-token with the same inflection rules (*cough drops* ← *cough drop*), plus: possessive placeholders (*counted my blessings* / *put Maria's back up* ← *count one's blessings*, *put someone's back up*), person placeholders (*have him by the short hairs* ← *have someone by the short hairs*), separable phrasal verbs bridging up to two filler tokens (*gave the idea up* ← *give up*), and hyphen/space equivalence (*state of the art* ← *state-of-the-art*).
-- The weak tiers — consonant-skeleton equality and typo-level Levenshtein edits — exist in the matcher but are permanently disabled: they over-match ordinary prose (*voice* vs deck word *vice*).
+## Getting started
 
-## AI suggestions
+1. Enable the plugin, then open its settings.
+2. Click **Sign in or sign up** — enter your email and the six-digit code you receive. A new email creates an Inoh account automatically.
+3. Build your vocabulary deck at [inoh.app](https://inoh.app) (or in the Inoh iOS app), then hit **Refresh deck** — or just click the status bar item.
+4. Write. Deck words light up as you type; the status bar shows how many words are loaded.
 
-Select text and run **Inoh: Suggest deck words for selection**. The selection (≤2,000 chars) plus up to 1,000 of your most recently added deck words go to the `suggest-deck-words` Supabase edge function ([inoh-backend]), which prompts OpenAI server-side — no API key in the client; free-plan requests are truncated to the newest 300 words there. Each suggested phrase gets a wavy underline in the note (a CodeMirror state field; ranges remap through edits and are discarded when the note closes). Hovering shows the deck word, its definition, the original → replacement diff, a one-sentence "why this fits" explanation, and Apply / Dismiss / Dismiss all buttons. The server rejects any suggestion whose replacement doesn't actually use the deck word. Free accounts get 10 suggestions per day; Pro is unlimited.
+## Network use disclosure
 
-[inoh-backend]: https://github.com/taisukemino/inoh-backend
+- The plugin talks to Inoh's backend (Supabase) to sign you in and download your vocabulary deck.
+- When you run the suggestion command, your selected text (up to 2,000 characters) and your deck words are sent to Inoh's backend, which uses OpenAI to generate suggestions. Nothing else from your vault is ever uploaded.
+- Auth tokens are stored in device-local storage, never in vault files, so they are not carried along by vault sync services.
 
 ## Development
 
@@ -31,8 +34,6 @@ pnpm build      # typecheck + minified production build to ./main.js
 
 Open `test-vault/` in Obsidian (trust it and enable community plugins). The vault ships with the [hot-reload](https://github.com/pjeby/hot-reload) plugin, so the plugin reloads on every rebuild.
 
-### Layout
-
 ```
 src/
 ├── main.ts                  # plugin wiring
@@ -45,15 +46,8 @@ src/
 └── ui/status-bar.ts
 ```
 
-Ported code: Supabase layer from `inoh-raycast`, matching primitives from the Inoh iOS app's `sentence-utils.ts` / `irregular-verb-forms.ts`.
+Implementation notes: the highlighter is a CodeMirror 6 view plugin that scans only the visible viewport, debounced 200 ms after the last keystroke; each deck word is expanded into its exact surface forms at index time, so a rescan is a map lookup per token. Obsidian's own `@codemirror/*` packages are `external` in the build — bundling a second copy breaks decoration rendering.
 
-## Obsidian constraints found (PRI-20162 deliverable)
+## License
 
-1. **Don't bundle `@codemirror/*` / `@lezer/*`** — Obsidian ships its own CodeMirror 6; a second copy breaks facet identity and decorations silently stop rendering. They are `external` in `esbuild.config.mjs`.
-2. **Editing views only** — CM6 decorations cover Live Preview and source mode. Reading mode would need a separate `MarkdownPostProcessor`; skipped for the prototype.
-3. **Performance** — viewport-only scanning + the token-driven index keeps a rescan under ~1 ms for a 300-word deck; naive per-deck-word regex would be O(300 × document).
-4. **Deck sync** — `user_cards` has no `updated_at` cursor, so sync is a full refetch: on startup, on demand via the status bar or the settings tab.
-5. **Token security** — `data.json` syncs with the vault, so sessions go in `localStorage` (per-device, per-vault key prefix) instead.
-6. **Desktop only for now** (`isDesktopOnly: true`) — nothing is fundamentally desktop-bound; mobile is a flag-flip + testing exercise.
-
-[PRI-20162]: https://linear.app/tai-lab/issue/PRI-20162/build-the-obsidian-plugin
+[MIT](LICENSE)
