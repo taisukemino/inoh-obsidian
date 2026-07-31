@@ -108,6 +108,11 @@ export class InohSettingsTab extends PluginSettingTab {
       visible: () => !this.isSignedOut(),
       render: (setting) => {
         setting.addButton((button) =>
+          button.setButtonText("Open inoh.app").onClick(() => {
+            window.open(WEB_APP_URL);
+          }),
+        );
+        setting.addButton((button) =>
           button.setButtonText("Refresh deck").onClick(async () => {
             await this.plugin.refreshDeck();
             this.refresh();

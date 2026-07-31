@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, Plugin } from "obsidian";
+import { MarkdownView, Notice, Platform, Plugin } from "obsidian";
 import type { EditorView } from "@codemirror/view";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DeckService } from "./deck/deck-service";
@@ -70,10 +70,14 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
 
     this.addSettingTab(new InohSettingsTab(this.app, this));
 
+    // On mobile the selection is lost when the command palette opens, so the
+    // command always runs on the whole note there — name it accordingly.
     this.addCommand({
       id: "suggest-deck-words",
-      name: "Suggest deck words for selection",
-      callback: () => void this.suggestForSelection(),
+      name: Platform.isMobile
+        ? "Suggest deck words for entire note"
+        : "Suggest deck words for selection or note",
+      callback: () => void this.suggestForSelectionOrNote(),
     });
 
     const { data: authListener } = this.supabase.auth.onAuthStateChange((_event, session) => {
@@ -110,11 +114,16 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     await this.deckService.clear();
   }
 
-  /** Command: ask the backend where the selected text could use a deck word. */
-  private async suggestForSelection(): Promise<void> {
+  /**
+   * Command: ask the backend where the text could use a deck word.
+   * Uses the selection when there is one, otherwise the entire note —
+   * selecting text is fiddly on mobile, so the whole-note fallback keeps
+   * the command usable there.
+   */
+  private async suggestForSelectionOrNote(): Promise<void> {
     const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (!markdownView?.file) {
-      new Notice("Open a note and select some text first.");
+      new Notice("Open a note first.");
       return;
     }
     if (!this.currentUserEmail) {
@@ -123,8 +132,10 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     }
     const editor = markdownView.editor;
     const selectedText = editor.getSelection().trim();
-    if (!selectedText) {
-      new Notice("Select the text you want suggestions for.");
+    const hasSelection = selectedText.length > 0;
+    const suggestionText = hasSelection ? selectedText : editor.getValue().trim();
+    if (!suggestionText) {
+      new Notice("This note is empty — write something first.");
       return;
     }
     const cards = this.deckService.getCards();
@@ -137,14 +148,16 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       new Notice("Could not access the editor.");
       return;
     }
-    const selectionFrom = editor.posToOffset(editor.getCursor("from"));
-    const selectionTo = editor.posToOffset(editor.getCursor("to"));
+    const selectionFrom = hasSelection ? editor.posToOffset(editor.getCursor("from")) : 0;
+    const selectionTo = hasSelection
+      ? editor.posToOffset(editor.getCursor("to"))
+      : editorView.state.doc.length;
 
     const loadingNotice = new Notice("Inoh: looking for places to use your deck words…", 0);
     try {
       const result = await requestDeckWordSuggestions(
         this.supabase,
-        selectedText.slice(0, MAX_SUGGESTION_TEXT_LENGTH),
+        suggestionText.slice(0, MAX_SUGGESTION_TEXT_LENGTH),
         cards,
       );
       // The server only returns the word; its definition lives on the deck card.
@@ -161,7 +174,11 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
         suggestionsWithDefinitions,
       );
       if (resolved.length === 0) {
-        new Notice("No good fits in this selection — keep writing!");
+        new Notice(
+          hasSelection
+            ? "No good fits in this selection — keep writing!"
+            : "No good fits in this note — keep writing!",
+        );
         return;
       }
       editorView.dispatch({ effects: setSuggestionsEffect.of(resolved) });

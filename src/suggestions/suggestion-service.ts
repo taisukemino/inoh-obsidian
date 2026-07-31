@@ -38,7 +38,7 @@ const MAX_SUGGESTION_DECK_WORDS = 1_000;
  * authenticates the call and Pro/free limits are enforced there.
  *
  * @param supabase - Signed-in Supabase client
- * @param selectedText - The text the user selected in the editor
+ * @param suggestionText - The selected text, or the whole note when nothing is selected
  * @param deckCards - Deck cards to suggest from
  * @returns Validated suggestions plus the remaining free quota, if capped
  * @throws {SuggestionLimitError} When the free daily limit is used up
@@ -46,7 +46,7 @@ const MAX_SUGGESTION_DECK_WORDS = 1_000;
  */
 export async function requestDeckWordSuggestions(
   supabase: SupabaseClient,
-  selectedText: string,
+  suggestionText: string,
   deckCards: DeckCard[],
 ): Promise<SuggestionResult> {
   const deckWords = deckCards.slice(0, MAX_SUGGESTION_DECK_WORDS).map((card) => ({
@@ -58,7 +58,7 @@ export async function requestDeckWordSuggestions(
     "suggest-deck-words",
     {
       body: {
-        paragraph: selectedText,
+        paragraph: suggestionText,
         deckWords,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },

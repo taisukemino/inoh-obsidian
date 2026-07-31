@@ -6,7 +6,7 @@ Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you wr
 
 - **Deck-word highlighting.** Words from your deck get a dotted underline as you write, including inflected forms (*crossed* for *cross*, *went* for *go*) and multi-word idioms (*counted my blessings* for *count one's blessings*, *gave the idea up* for *give up*). Matching is exact against real English forms — *brain* never lights up *brainy*.
 - **Hover to review.** Hovering a highlighted word shows its definition, phonetic, example sentence, and pronunciation audio, with a link to the word in the Inoh app.
-- **AI suggestions.** Select a passage and run **Suggest deck words for selection**. Phrases that could be rewritten with one of your deck words get a wavy underline; hover one to see the deck word, its definition, the rewrite, and a one-sentence explanation of why it fits — then Apply or Dismiss. Free accounts get 10 suggestion requests per day; [Inoh Pro](https://inoh.app) is unlimited.
+- **AI suggestions.** Run **Suggest deck words for selection or note** — it works on the selected passage, or the entire note when nothing is selected. On mobile the selection is lost when the command palette opens, so there the command is named **Suggest deck words for entire note** and always covers the whole note. Phrases that could be rewritten with one of your deck words get a wavy underline; hover one to see the deck word, its definition, the rewrite, and a one-sentence explanation of why it fits — then Apply or Dismiss. Free accounts get 10 suggestion requests per day; [Inoh Pro](https://inoh.app) is unlimited.
 - **Works offline.** Your deck is cached locally, so highlighting keeps working without a connection.
 
 ## Getting started
