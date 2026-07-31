@@ -56,12 +56,13 @@ export class InohSettingsTab extends PluginSettingTab {
   }
 
   /**
-   * Re-reads the definitions (row names and visibility depend on auth and
-   * deck state) and repaints. `update()` alone only restores the definitions.
+   * Re-reads the definitions and repaints. Row names and visibility depend on
+   * auth and deck state, so sign-in, sign-out, and deck refresh all call this.
+   * Reason: on 1.13+ `display()` does not refresh declaratively rendered
+   * settings — `update()` is the only thing that does.
    */
   private refresh(): void {
     this.update();
-    this.display();
   }
 
   private isSignedOut(): boolean {
