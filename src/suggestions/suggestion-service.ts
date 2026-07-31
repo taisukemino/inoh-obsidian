@@ -54,24 +54,34 @@ export async function requestDeckWordSuggestions(
     definition: card.dictionary.definition,
   }));
 
-  const { data, error } = await supabase.functions.invoke("suggest-deck-words", {
-    body: {
-      paragraph: selectedText,
-      deckWords,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  const { data, error } = await supabase.functions.invoke<SuggestionResult>(
+    "suggest-deck-words",
+    {
+      body: {
+        paragraph: selectedText,
+        deckWords,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
     },
-  });
+  );
 
   if (error) {
     throw await toFriendlyError(error);
   }
-  return data as SuggestionResult;
+  if (!data) {
+    throw new Error("The suggestion service returned an empty response.");
+  }
+  return data;
 }
+
+/** Error body returned by the edge function alongside a non-2xx status. */
+type SuggestionErrorBody = { error?: string; code?: string };
 
 async function toFriendlyError(error: unknown): Promise<Error> {
   if (error instanceof FunctionsHttpError) {
     try {
-      const body = (await error.context.json()) as { error?: string; code?: string };
+      const response = error.context as Response;
+      const body = (await response.json()) as SuggestionErrorBody;
       if (body.code === "SUGGESTION_LIMIT") {
         return new SuggestionLimitError(body.error ?? "Daily suggestion limit reached.");
       }

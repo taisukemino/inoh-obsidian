@@ -32,8 +32,7 @@ export function buildHoverTooltip(highlighterPlugin: InohHighlighterPlugin): Ext
 
 function renderCardTooltip(card: DeckCard): HTMLElement {
   const { dictionary } = card;
-  const root = document.createElement("div");
-  root.className = "inoh-tooltip";
+  const root = createDiv({ cls: "inoh-tooltip" });
 
   const header = root.createDiv({ cls: "inoh-tooltip-header" });
   header.createEl("a", {

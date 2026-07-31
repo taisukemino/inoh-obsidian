@@ -1,5 +1,4 @@
 import esbuild from "esbuild";
-import builtinModules from "builtin-modules";
 import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -67,7 +66,6 @@ const buildContext = await esbuild.context({
     "@lezer/common",
     "@lezer/highlight",
     "@lezer/lr",
-    ...builtinModules,
   ],
   plugins: [copyPluginAssetsPlugin],
 });

@@ -112,8 +112,7 @@ export function buildSuggestionTooltip(): Extension {
 
 function renderSuggestionTooltip(view: EditorView, active: ActiveSuggestion): HTMLElement {
   const { suggestion } = active;
-  const root = document.createElement("div");
-  root.className = "inoh-tooltip";
+  const root = createDiv({ cls: "inoh-tooltip" });
 
   root.createDiv({ cls: "inoh-suggestion-word", text: suggestion.word });
   if (suggestion.definition) {

@@ -94,7 +94,7 @@ export class DeckService extends Events {
       // Supabase types the joined `dictionary` relation loosely; the select
       // above matches DeckCard exactly.
       this.cards = cardsResult.data as unknown as DeckCard[];
-      this.decks = decksResult.data as Deck[];
+      this.decks = decksResult.data;
       this.fetchedAt = Date.now();
       await this.persistCache({ fetchedAt: this.fetchedAt, cards: this.cards, decks: this.decks });
     } finally {
