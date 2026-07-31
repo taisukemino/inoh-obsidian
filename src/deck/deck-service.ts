@@ -70,7 +70,13 @@ export class DeckService extends Events {
     this.trigger("deck-changed");
     try {
       const [cardsResult, decksResult] = await Promise.all([
-        this.supabase.from("user_cards").select(DECK_CARD_SELECT).eq("user_id", session.user.id),
+        // Newest first, so capped payloads (e.g. suggestions) keep the words
+        // the user is currently learning.
+        this.supabase
+          .from("user_cards")
+          .select(DECK_CARD_SELECT)
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: false }),
         this.supabase
           .from("decks")
           .select("id, name")

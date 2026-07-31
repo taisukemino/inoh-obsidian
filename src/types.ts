@@ -41,15 +41,8 @@ export type DeckMatch = {
   card: DeckCard;
 };
 
-export type HighlightStyle = "underline" | "background";
-
 export type InohSettings = {
   highlightEnabled: boolean;
-  highlightStyle: HighlightStyle;
-  /** Enables the weak Levenshtein match tier. Off by default: it over-matches while typing. */
-  tolerantMatching: boolean;
-  /** null = match against all decks. */
-  selectedDeckId: string | null;
 };
 
 export type DeckCache = {

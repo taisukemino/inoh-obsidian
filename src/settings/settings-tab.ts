@@ -1,6 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import { WEB_APP_URL } from "../constants";
 import type InohPlugin from "../main";
-import type { HighlightStyle } from "../types";
 import { AuthModal } from "./auth-modal";
 
 export class InohSettingsTab extends PluginSettingTab {
@@ -14,7 +14,6 @@ export class InohSettingsTab extends PluginSettingTab {
   display(): void {
     this.containerEl.empty();
     this.renderAccountSection();
-    this.renderDeckSection();
     this.renderHighlightSection();
   }
 
@@ -23,11 +22,20 @@ export class InohSettingsTab extends PluginSettingTab {
 
     if (!this.plugin.currentUserEmail) {
       new Setting(this.containerEl)
-        .setName("Not signed in")
-        .setDesc("Sign in with your Inoh account to load your deck.")
+        .setName("Get started")
+        .setDesc(
+          createFragment((fragment) => {
+            fragment.appendText(
+              "Sign in with your email — entering a new email creates an Inoh account automatically. ",
+            );
+            fragment.appendText("You build your vocabulary deck at ");
+            fragment.createEl("a", { text: "inoh.app", href: WEB_APP_URL });
+            fragment.appendText(" and this plugin brings it into your notes.");
+          }),
+        )
         .addButton((button) =>
           button
-            .setButtonText("Sign in")
+            .setButtonText("Sign in or sign up")
             .setCta()
             .onClick(() => {
               new AuthModal(this.app, this.plugin.supabase, () => {
@@ -66,25 +74,23 @@ export class InohSettingsTab extends PluginSettingTab {
             this.display();
           }),
       );
-  }
 
-  private renderDeckSection(): void {
-    new Setting(this.containerEl).setName("Deck").setHeading();
-
-    new Setting(this.containerEl)
-      .setName("Highlight words from")
-      .setDesc("Limit highlighting to one deck, or match against all of them.")
-      .addDropdown((dropdown) => {
-        dropdown.addOption("", "All decks");
-        for (const deck of this.plugin.deckService.getDecks()) {
-          dropdown.addOption(deck.id, deck.name);
-        }
-        dropdown.setValue(this.plugin.settings.selectedDeckId ?? "");
-        dropdown.onChange(async (value) => {
-          this.plugin.settings.selectedDeckId = value || null;
-          await this.plugin.saveSettings();
-        });
-      });
+    if (this.plugin.deckService.getCards().length === 0) {
+      new Setting(this.containerEl)
+        .setName("Your deck is empty")
+        .setDesc(
+          "Add words to your deck in the Inoh app, then hit Refresh deck. " +
+            "Highlighting and suggestions start working once your deck has words.",
+        )
+        .addButton((button) =>
+          button
+            .setButtonText("Open inoh.app")
+            .setCta()
+            .onClick(() => {
+              window.open(WEB_APP_URL);
+            }),
+        );
+    }
   }
 
   private renderHighlightSection(): void {
@@ -96,29 +102,6 @@ export class InohSettingsTab extends PluginSettingTab {
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.highlightEnabled).onChange(async (value) => {
           this.plugin.settings.highlightEnabled = value;
-          await this.plugin.saveSettings();
-        }),
-      );
-
-    new Setting(this.containerEl)
-      .setName("Highlight style")
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("underline", "Dotted underline")
-          .addOption("background", "Background tint")
-          .setValue(this.plugin.settings.highlightStyle)
-          .onChange(async (value) => {
-            this.plugin.settings.highlightStyle = value as HighlightStyle;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    new Setting(this.containerEl)
-      .setName("Tolerant matching")
-      .setDesc("Also match typo-level spellings of deck words. May over-match while typing.")
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.tolerantMatching).onChange(async (value) => {
-          this.plugin.settings.tolerantMatching = value;
           await this.plugin.saveSettings();
         }),
       );

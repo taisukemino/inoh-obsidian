@@ -30,7 +30,7 @@ export class AuthModal extends Modal {
 
   private render(): void {
     this.contentEl.empty();
-    this.setTitle("Sign in to Inoh");
+    this.setTitle("Sign in or create your Inoh account");
 
     if (this.step === "email") {
       this.renderEmailStep();

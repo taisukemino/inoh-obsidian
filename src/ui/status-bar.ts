@@ -1,9 +1,9 @@
 import type InohPlugin from "../main";
 
 /**
- * Status-bar item cycling through the plugin's three states:
- * "Inoh: sign in" → "Inoh: syncing…" → "Inoh: N words".
- * Click refreshes the deck (or opens settings when signed out).
+ * Status-bar item cycling through the plugin's states:
+ * "Inoh: sign in" → "Inoh: syncing…" → "Inoh: N words" (or "add words").
+ * Click refreshes the deck (or opens settings when signed out / deck empty).
  */
 export class StatusBar {
   constructor(
@@ -12,9 +12,11 @@ export class StatusBar {
   ) {
     element.addClass("mod-clickable");
     element.onClickEvent(() => {
-      if (this.plugin.currentUserEmail) {
+      const hasWords = this.plugin.deckService.getCards().length > 0;
+      if (this.plugin.currentUserEmail && hasWords) {
         void this.plugin.refreshDeck();
       } else {
+        // Signed out or empty deck: settings has the sign-in / add-words guide.
         this.openPluginSettings();
       }
     });
@@ -31,6 +33,10 @@ export class StatusBar {
       return;
     }
     const cardCount = this.plugin.deckService.getCards().length;
+    if (cardCount === 0) {
+      this.element.setText("Inoh: add words");
+      return;
+    }
     this.element.setText(`Inoh: ${cardCount} ${cardCount === 1 ? "word" : "words"}`);
   }
 

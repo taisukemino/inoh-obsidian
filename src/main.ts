@@ -8,23 +8,24 @@ import {
   type MatcherProvider,
 } from "./editor/highlight-extension";
 import { buildHoverTooltip } from "./editor/hover-tooltip";
+import {
+  buildSuggestionTooltip,
+  resolveSuggestionRanges,
+  setSuggestionsEffect,
+  suggestionField,
+} from "./editor/suggestion-extension";
 import { DeckIndex } from "./matching/deck-index";
 import { DeckMatcher } from "./matching/matcher";
 import { DEFAULT_SETTINGS } from "./settings/settings";
 import { InohSettingsTab } from "./settings/settings-tab";
-import { getParagraphAtCursor } from "./suggestions/paragraph";
-import {
-  requestDeckWordSuggestions,
-  SuggestionLimitError,
-} from "./suggestions/suggestion-service";
-import { SuggestionView, SUGGESTION_VIEW_TYPE } from "./suggestions/suggestion-view";
+import { requestDeckWordSuggestions } from "./suggestions/suggestion-service";
 import { signOutUser } from "./supabase/auth";
 import { createSupabaseClient } from "./supabase/client";
 import { StatusBar } from "./ui/status-bar";
 import type { DeckCache, InohSettings, PluginData } from "./types";
 
-/** Server-side paragraph limit in the suggest-deck-words edge function. */
-const MAX_SUGGESTION_PARAGRAPH_LENGTH = 2_000;
+/** Server-side text limit (MAX_PARAGRAPH_LENGTH) in the suggest-deck-words edge function. */
+const MAX_SUGGESTION_TEXT_LENGTH = 2_000;
 
 /**
  * Inoh for Obsidian: highlights words from the user's Inoh vocabulary deck
@@ -60,20 +61,19 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     );
 
     const highlighterPlugin = buildHighlightViewPlugin(this);
-    this.registerEditorExtension([highlighterPlugin, buildHoverTooltip(highlighterPlugin)]);
+    this.registerEditorExtension([
+      highlighterPlugin,
+      buildHoverTooltip(highlighterPlugin),
+      suggestionField,
+      buildSuggestionTooltip(),
+    ]);
 
     this.addSettingTab(new InohSettingsTab(this.app, this));
-    this.addCommand({
-      id: "refresh-deck",
-      name: "Refresh deck",
-      callback: () => void this.refreshDeck(),
-    });
 
-    this.registerView(SUGGESTION_VIEW_TYPE, (leaf) => new SuggestionView(leaf));
     this.addCommand({
       id: "suggest-deck-words",
-      name: "Suggest deck words for this paragraph",
-      callback: () => void this.suggestForActiveParagraph(),
+      name: "Suggest deck words for selection",
+      callback: () => void this.suggestForSelection(),
     });
 
     const { data: authListener } = this.supabase.auth.onAuthStateChange((_event, session) => {
@@ -91,9 +91,9 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     return this.settings.highlightEnabled ? this.matcher : null;
   }
 
-  /** MatcherProvider: highlight mark classes, driven by the style setting. */
+  /** MatcherProvider: highlight mark classes for deck words. */
   getHighlightClass(): string {
-    return `inoh-deck-word inoh-${this.settings.highlightStyle}`;
+    return "inoh-deck-word inoh-underline";
   }
 
   /** Refetches the deck from Supabase, surfacing errors as Notices. */
@@ -110,58 +110,72 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     await this.deckService.clear();
   }
 
-  /** Command: ask the backend where the current paragraph could use a deck word. */
-  private async suggestForActiveParagraph(): Promise<void> {
+  /** Command: ask the backend where the selected text could use a deck word. */
+  private async suggestForSelection(): Promise<void> {
     const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (!markdownView?.file) {
-      new Notice("Open a note and put the cursor in a paragraph first.");
+      new Notice("Open a note and select some text first.");
       return;
     }
     if (!this.currentUserEmail) {
       new Notice("Sign in to Inoh first (plugin settings).");
       return;
     }
-    const paragraph = getParagraphAtCursor(markdownView.editor);
-    if (!paragraph) {
-      new Notice("Put the cursor inside a paragraph first.");
+    const editor = markdownView.editor;
+    const selectedText = editor.getSelection().trim();
+    if (!selectedText) {
+      new Notice("Select the text you want suggestions for.");
       return;
     }
-    const cards = this.deckService.getCards(this.settings.selectedDeckId);
+    const cards = this.deckService.getCards();
     if (cards.length === 0) {
-      new Notice("Your deck is empty or not synced yet.");
+      new Notice("Your deck is empty — add words at inoh.app, then refresh from the settings.");
       return;
     }
+    const editorView = (editor as unknown as { cm?: EditorView }).cm;
+    if (!editorView) {
+      new Notice("Could not access the editor.");
+      return;
+    }
+    const selectionFrom = editor.posToOffset(editor.getCursor("from"));
+    const selectionTo = editor.posToOffset(editor.getCursor("to"));
 
-    const view = await this.activateSuggestionView();
-    view.setLoading();
+    const loadingNotice = new Notice("Inoh: looking for places to use your deck words…", 0);
     try {
       const result = await requestDeckWordSuggestions(
         this.supabase,
-        paragraph.slice(0, MAX_SUGGESTION_PARAGRAPH_LENGTH),
+        selectedText.slice(0, MAX_SUGGESTION_TEXT_LENGTH),
         cards,
       );
-      view.setResults(
-        markdownView.file.path,
-        result.suggestions,
-        result.remainingSuggestionsToday,
+      // The server only returns the word; its definition lives on the deck card.
+      const suggestionsWithDefinitions = result.suggestions.map((suggestion) => ({
+        ...suggestion,
+        definition: cards.find(
+          (card) => card.dictionary.word.toLowerCase() === suggestion.word.toLowerCase(),
+        )?.dictionary.definition,
+      }));
+      const resolved = resolveSuggestionRanges(
+        editorView.state.doc.toString(),
+        selectionFrom,
+        selectionTo,
+        suggestionsWithDefinitions,
       );
-    } catch (error) {
-      if (error instanceof SuggestionLimitError) {
-        view.setError(error.message);
+      if (resolved.length === 0) {
+        new Notice("No good fits in this selection — keep writing!");
         return;
       }
-      view.setError(error instanceof Error ? error.message : String(error));
+      editorView.dispatch({ effects: setSuggestionsEffect.of(resolved) });
+      const suggestionCount = `${resolved.length} suggestion${resolved.length === 1 ? "" : "s"}`;
+      const quotaSuffix =
+        result.remainingSuggestionsToday !== undefined
+          ? ` ${result.remainingSuggestionsToday} free suggestions left today.`
+          : "";
+      new Notice(`${suggestionCount} marked — hover a phrase to apply.${quotaSuffix}`);
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : String(error));
+    } finally {
+      loadingNotice.hide();
     }
-  }
-
-  private async activateSuggestionView(): Promise<SuggestionView> {
-    let leaf = this.app.workspace.getLeavesOfType(SUGGESTION_VIEW_TYPE)[0];
-    if (!leaf) {
-      leaf = this.app.workspace.getRightLeaf(false)!;
-      await leaf.setViewState({ type: SUGGESTION_VIEW_TYPE, active: true });
-    }
-    await this.app.workspace.revealLeaf(leaf);
-    return leaf.view as SuggestionView;
   }
 
   async saveSettings(): Promise<void> {
@@ -174,10 +188,10 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
    * Cheap (~ms for 300 cards), so it simply runs on every deck or settings change.
    */
   private rebuildMatcher(): void {
-    const cards = this.deckService.getCards(this.settings.selectedDeckId);
+    const cards = this.deckService.getCards();
     this.matcher =
       cards.length > 0
-        ? new DeckMatcher(new DeckIndex(cards), { tolerant: this.settings.tolerantMatching })
+        ? new DeckMatcher(new DeckIndex(cards), { tolerant: false })
         : null;
 
     for (const leaf of this.app.workspace.getLeavesOfType("markdown")) {

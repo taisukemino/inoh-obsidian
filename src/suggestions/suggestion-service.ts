@@ -9,6 +9,10 @@ export type DeckWordSuggestion = {
   replacement: string;
   /** The deck word used, as written in the deck. */
   word: string;
+  /** One-sentence "why this word fits here" from the model. May be empty. */
+  explanation?: string;
+  /** The deck card's definition, resolved client-side before display. */
+  definition?: string;
 };
 
 export type SuggestionResult = {
@@ -21,30 +25,38 @@ export type SuggestionResult = {
 export class SuggestionLimitError extends Error {}
 
 /**
- * Asks the suggest-deck-words edge function where the paragraph could use a
+ * MAX_DECK_WORDS in the suggest-deck-words edge function — it rejects larger
+ * payloads. Decks can exceed this (Pro plan), so the client caps what it sends.
+ */
+const MAX_SUGGESTION_DECK_WORDS = 300;
+
+/**
+ * Asks the suggest-deck-words edge function where the given text could use a
  * deck word. The OpenAI key lives server-side; the user's Supabase session
  * authenticates the call and Pro/free limits are enforced there.
  *
  * @param supabase - Signed-in Supabase client
- * @param paragraph - The paragraph the user is writing
- * @param deckCards - Deck cards to suggest from (already filtered by settings)
+ * @param selectedText - The text the user selected in the editor
+ * @param deckCards - Deck cards to suggest from
  * @returns Validated suggestions plus the remaining free quota, if capped
  * @throws {SuggestionLimitError} When the free daily limit is used up
  * @throws {Error} When the request fails for any other reason
  */
 export async function requestDeckWordSuggestions(
   supabase: SupabaseClient,
-  paragraph: string,
+  selectedText: string,
   deckCards: DeckCard[],
 ): Promise<SuggestionResult> {
-  const deckWords = deckCards.map((card) => ({
+  // Reason: cards arrive newest-first from DeckService, so the cap keeps the
+  // words the user added most recently.
+  const deckWords = deckCards.slice(0, MAX_SUGGESTION_DECK_WORDS).map((card) => ({
     word: card.dictionary.word,
     definition: card.dictionary.definition,
   }));
 
   const { data, error } = await supabase.functions.invoke("suggest-deck-words", {
     body: {
-      paragraph,
+      paragraph: selectedText,
       deckWords,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
