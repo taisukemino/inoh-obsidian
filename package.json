@@ -1,6 +1,6 @@
 {
   "name": "inoh-obsidian",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Obsidian plugin that highlights words from your Inoh vocabulary deck while you write",
   "main": "main.js",
   "scripts": {
