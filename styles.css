@@ -1,6 +1,7 @@
-/* Inoh brand red — matches the iOS app's `colors.red` in src/theme.ts */
+/* Inoh brand red — matches the iOS app's `colors.red` ("Quiet Canvas"
+   palette) in src/theme.ts, the color used for the app's buttons. */
 body {
-  --inoh-brand: #ff3346;
+  --inoh-brand: #e1442a;
 }
 
 /* Deck words highlighted in the editor. Solid underline on purpose: the
@@ -75,15 +76,16 @@ body {
 }
 
 /* Phrases in the note with a pending deck-word suggestion */
-/* Phrases with a pending suggestion. A soft accent-tinted highlight with a
-   dotted underline reads as "practice opportunity" — deliberately unlike the
-   spellchecker's wavy error squiggle. */
+/* Phrases with a pending suggestion. A soft brand-tinted highlight with a
+   dotted underline reads as "practice opportunity" — the background block is
+   what keeps it distinct from the spellchecker's bare squiggle. The 16% tint
+   mirrors the app's `colors.redHighlight`. */
 .inoh-suggestion-phrase {
-  background-color: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  background-color: color-mix(in srgb, var(--inoh-brand) 16%, transparent);
   border-radius: 3px;
   text-decoration-line: underline;
   text-decoration-style: dotted;
-  text-decoration-color: var(--interactive-accent);
+  text-decoration-color: var(--inoh-brand);
   text-underline-offset: 3px;
 }
 
