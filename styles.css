@@ -11,7 +11,9 @@ body {
   text-underline-offset: 3px;
 }
 
-/* Hover tooltip showing the deck card */
+/* Hover tooltip showing the deck card. Rendered into document.body (see
+   suggestion-extension.ts), so it needs its own layer to paint above the
+   workspace sidebars. */
 .inoh-tooltip {
   max-width: 320px;
   padding: 8px 10px;
@@ -19,6 +21,7 @@ body {
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
   font-size: var(--font-ui-small);
+  z-index: var(--layer-tooltip);
 }
 
 .inoh-tooltip-header {

@@ -91,11 +91,11 @@ export function resolveSuggestionRanges(
 
 /** Builds the hover tooltip with Apply / Dismiss actions for a marked phrase. */
 export function buildSuggestionTooltip(): Extension {
-  // Reason: CodeMirror positions tooltips absolutely inside the editor pane
-  // by default, so a wide tooltip near the pane edge is clipped by the
-  // sidebar. Fixed positioning escapes the pane's overflow clipping and lets
-  // CodeMirror keep the tooltip inside the window instead.
-  const tooltipPositioning = tooltips({ position: "fixed" });
+  // Reason: Obsidian's workspace leaves use CSS containment, which clips
+  // even fixed-position tooltips at the pane edge and paints the sidebar
+  // over them. Rendering into document.body escapes the pane entirely, so
+  // CodeMirror can keep the tooltip fully visible inside the window.
+  const tooltipPositioning = tooltips({ position: "fixed", parent: document.body });
   const suggestionHoverTooltip = hoverTooltip(
     (view, pos) => {
       const active = view.state
