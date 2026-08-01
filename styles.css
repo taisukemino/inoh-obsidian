@@ -1,16 +1,18 @@
-/* Inoh brand red — matches the iOS app's `colors.red` ("Quiet Canvas"
-   palette) in src/theme.ts, the color used for the app's buttons. */
+/* Inoh brand colors — match the iOS app's `colors` ("Quiet Canvas" palette)
+   in src/theme.ts: red is the button color, green is the positive-feedback
+   color (correct answers, success states). */
 body {
   --inoh-brand: #e1442a;
+  --inoh-green: #12bb4f;
 }
 
-/* Deck words highlighted in the editor. Solid underline on purpose: the
+/* Deck words highlighted in the editor. Green and solid on purpose: the
    native spellchecker draws red dotted/wavy squiggles, and inoh marks must
-   never look like spelling errors. */
+   never look like spelling errors — no red in the editor. */
 .inoh-deck-word {
   text-decoration-line: underline;
   text-decoration-style: solid;
-  text-decoration-color: var(--inoh-brand);
+  text-decoration-color: var(--inoh-green);
   text-decoration-thickness: 1.5px;
   text-underline-offset: 3px;
 }
@@ -76,16 +78,16 @@ body {
 }
 
 /* Phrases in the note with a pending deck-word suggestion */
-/* Phrases with a pending suggestion. A soft brand-tinted highlight with a
-   dotted underline reads as "practice opportunity" — the background block is
-   what keeps it distinct from the spellchecker's bare squiggle. The 16% tint
-   mirrors the app's `colors.redHighlight`. */
+/* Phrases with a pending suggestion. Green on purpose: a suggestion is an
+   opportunity, not an error, and green can never be mistaken for the
+   spellchecker's red squiggle. The soft tint block plus dotted underline
+   mirrors the app's positive-feedback styling. */
 .inoh-suggestion-phrase {
-  background-color: color-mix(in srgb, var(--inoh-brand) 16%, transparent);
+  background-color: color-mix(in srgb, var(--inoh-green) 16%, transparent);
   border-radius: 3px;
   text-decoration-line: underline;
   text-decoration-style: dotted;
-  text-decoration-color: var(--inoh-brand);
+  text-decoration-color: var(--inoh-green);
   text-underline-offset: 3px;
 }
 
