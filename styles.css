@@ -3,11 +3,14 @@ body {
   --inoh-brand: #ff3346;
 }
 
-/* Deck words highlighted in the editor */
+/* Deck words highlighted in the editor. Solid underline on purpose: the
+   native spellchecker draws red dotted/wavy squiggles, and inoh marks must
+   never look like spelling errors. */
 .inoh-deck-word {
   text-decoration-line: underline;
-  text-decoration-style: dotted;
+  text-decoration-style: solid;
   text-decoration-color: var(--inoh-brand);
+  text-decoration-thickness: 1.5px;
   text-underline-offset: 3px;
 }
 
@@ -72,9 +75,14 @@ body {
 }
 
 /* Phrases in the note with a pending deck-word suggestion */
+/* Phrases with a pending suggestion. A soft accent-tinted highlight with a
+   dotted underline reads as "practice opportunity" — deliberately unlike the
+   spellchecker's wavy error squiggle. */
 .inoh-suggestion-phrase {
+  background-color: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  border-radius: 3px;
   text-decoration-line: underline;
-  text-decoration-style: wavy;
+  text-decoration-style: dotted;
   text-decoration-color: var(--interactive-accent);
   text-underline-offset: 3px;
 }
