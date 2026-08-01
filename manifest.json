@@ -1,7 +1,7 @@
 {
   "id": "inoh",
   "name": "Inoh",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "minAppVersion": "1.13.0",
   "description": "Highlights words from your Inoh vocabulary deck while you write and suggests places to use them, so you actually use what you're learning.",
   "author": "Naka, Inc",
