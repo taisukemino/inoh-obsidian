@@ -1,5 +1,5 @@
 import { StateEffect, StateField, type Extension } from "@codemirror/state";
-import { Decoration, EditorView, hoverTooltip } from "@codemirror/view";
+import { Decoration, EditorView, hoverTooltip, tooltips } from "@codemirror/view";
 import type { DeckWordSuggestion } from "../suggestions/suggestion-service";
 
 /** A suggestion anchored to a live document range. */
@@ -91,7 +91,12 @@ export function resolveSuggestionRanges(
 
 /** Builds the hover tooltip with Apply / Dismiss actions for a marked phrase. */
 export function buildSuggestionTooltip(): Extension {
-  return hoverTooltip(
+  // Reason: CodeMirror positions tooltips absolutely inside the editor pane
+  // by default, so a wide tooltip near the pane edge is clipped by the
+  // sidebar. Fixed positioning escapes the pane's overflow clipping and lets
+  // CodeMirror keep the tooltip inside the window instead.
+  const tooltipPositioning = tooltips({ position: "fixed" });
+  const suggestionHoverTooltip = hoverTooltip(
     (view, pos) => {
       const active = view.state
         .field(suggestionField)
@@ -108,6 +113,7 @@ export function buildSuggestionTooltip(): Extension {
     },
     { hoverTime: 150 },
   );
+  return [tooltipPositioning, suggestionHoverTooltip];
 }
 
 function renderSuggestionTooltip(view: EditorView, active: ActiveSuggestion): HTMLElement {
