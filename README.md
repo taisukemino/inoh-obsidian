@@ -33,7 +33,7 @@ pnpm typecheck  # tsc --noEmit
 pnpm build      # typecheck + minified production build to ./main.js
 ```
 
-`pnpm dev` writes straight into a vault, so set `OBSIDIAN_VAULT` to that vault's path (`OBSIDIAN_VAULT=~/Notes pnpm dev`). Install [hot-reload](https://github.com/pjeby/hot-reload) in the same vault and the plugin reloads on every rebuild.
+`pnpm dev` writes straight into a vault. It defaults to `~/Obsidian` and needs no setup if your vault lives there; otherwise copy `.env.example` to `.env` (gitignored) and point `OBSIDIAN_VAULT` at your vault's root — the folder containing `.obsidian/`. An `OBSIDIAN_VAULT` already in your environment wins over `.env`, so `OBSIDIAN_VAULT=~/Notes pnpm dev` works for a one-off. The build refuses to run if the resolved path has no `.obsidian/`, rather than creating directories somewhere unexpected. Install [hot-reload](https://github.com/pjeby/hot-reload) in the same vault and the plugin reloads on every rebuild.
 
 ```
 src/

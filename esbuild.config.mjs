@@ -1,16 +1,39 @@
 import esbuild from "esbuild";
+import { existsSync } from "node:fs";
 import { copyFile, mkdir, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import path from "node:path";
 
 const isProductionBuild = process.argv.includes("production");
 
+// Vault paths are per-machine, so .env is gitignored. An OBSIDIAN_VAULT already
+// in the environment wins, which keeps the one-off `OBSIDIAN_VAULT=… pnpm dev`
+// form working.
+if (existsSync(".env")) {
+  process.loadEnvFile(".env");
+}
+
+/** Expands a leading `~`, which .env files (unlike shells) do not do themselves. */
+const expandHome = (maybePath) =>
+  maybePath.startsWith("~") ? path.join(homedir(), maybePath.slice(1)) : maybePath;
+
+/** A vault is any folder Obsidian has claimed by putting `.obsidian/` in it. */
+const isVault = (candidatePath) => existsSync(path.join(candidatePath, ".obsidian"));
+
 // Dev builds go straight into a real vault so the hot-reload plugin picks them
-// up. Point OBSIDIAN_VAULT at that vault's root; see the README.
-const vaultPath = process.env.OBSIDIAN_VAULT;
-if (!isProductionBuild && !vaultPath) {
+// up. `~/Obsidian` is only a guess — Obsidian imposes no default location — so
+// it is used only when it really is a vault, and OBSIDIAN_VAULT overrides it.
+const defaultVaultPath = path.join(homedir(), "Obsidian");
+const configuredVaultPath = process.env.OBSIDIAN_VAULT;
+const vaultPath = configuredVaultPath ? expandHome(configuredVaultPath) : defaultVaultPath;
+
+if (!isProductionBuild && !isVault(vaultPath)) {
+  const reason = configuredVaultPath
+    ? `OBSIDIAN_VAULT points at ${vaultPath}, which has no .obsidian/ folder.`
+    : `No vault found at the default ${vaultPath}.`;
   console.error(
-    "Set OBSIDIAN_VAULT to your Obsidian vault's path to use `pnpm dev`,\n" +
-      "e.g. OBSIDIAN_VAULT=~/Notes pnpm dev — or run `pnpm build` instead.",
+    `${reason}\nCopy .env.example to .env and set OBSIDIAN_VAULT to your vault's ` +
+      "root — the folder containing .obsidian/. Or run `pnpm build` instead.",
   );
   process.exit(1);
 }

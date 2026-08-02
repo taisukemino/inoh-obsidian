@@ -4,5 +4,8 @@
 # Dependencies
 node_modules/
 
+# Local dev config (per-machine vault path)
+.env
+
 # OS
 .DS_Store
