@@ -12,21 +12,29 @@ export class ActiveSubscriptionError extends Error {}
 /** Row shape read from `subscriptions`; the plugin only needs the plan state. */
 type SubscriptionRow = { plan: string; status: string };
 
+/** Billing interval, matching the values stripe-subscribe resolves prices for. */
+export type BillingInterval = "month" | "year";
+
 /**
- * Asks stripe-subscribe for a hosted Stripe Checkout URL for Inoh Pro monthly.
+ * Asks stripe-subscribe for a hosted Stripe Checkout URL for Inoh Pro.
  *
- * Sends `plan` rather than a Stripe price ID so pricing can change without a
- * plugin release — the edge function resolves the ID from its own secrets.
+ * Sends the interval rather than a Stripe price ID so pricing can change
+ * without a plugin release — the edge function resolves the ID from its own
+ * secrets.
  *
  * @param supabase - Signed-in Supabase client
+ * @param plan - Billing interval to subscribe on
  * @returns The hosted Stripe Checkout URL to open in a browser
  * @throws {ActiveSubscriptionError} When the account already subscribes
  * @throws {Error} When the request fails for any other reason
  */
-export async function startProCheckout(supabase: SupabaseClient): Promise<string> {
+export async function startProCheckout(
+  supabase: SupabaseClient,
+  plan: BillingInterval,
+): Promise<string> {
   const { data, error } = await supabase.functions.invoke<{ url?: string }>("stripe-subscribe", {
     body: {
-      plan: "month",
+      plan,
       successUrl: CHECKOUT_SUCCESS_URL,
       cancelUrl: CHECKOUT_CANCEL_URL,
     },

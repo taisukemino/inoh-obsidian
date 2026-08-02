@@ -4,6 +4,7 @@ import {
   ActiveSubscriptionError,
   openBillingPortalUrl,
   startProCheckout,
+  type BillingInterval,
 } from "./subscription-service";
 
 /**
@@ -11,7 +12,9 @@ import {
  * between. Opened when the free daily suggestion cap is hit, and from the
  * plugin settings.
  *
- * Quotes neither the price nor the daily limit: Stripe Checkout shows the
+ * Offers both billing intervals; the edge function maps each to a Stripe price.
+ *
+ * Quotes neither the prices nor the daily limit: Stripe Checkout shows the
  * current price, and the server owns the limit and names it in the message it
  * sends back. Either number baked in here goes stale the first time it changes.
  */
@@ -47,26 +50,34 @@ export class UpgradeModal extends Modal {
     });
 
     new Setting(this.contentEl)
+      .setName("Choose a billing interval")
+      .setDesc("Stripe shows the exact price before you pay.")
       .addButton((button) =>
         button
-          .setButtonText("Upgrade to Inoh Pro")
+          .setButtonText("Yearly")
           .setCta()
-          .onClick(() => void this.openCheckout()),
+          .onClick(() => void this.openCheckout("year")),
       )
-      .addButton((button) => button.setButtonText("Not now").onClick(() => this.close()));
+      .addButton((button) =>
+        button.setButtonText("Monthly").onClick(() => void this.openCheckout("month")),
+      );
+
+    new Setting(this.contentEl).addButton((button) =>
+      button.setButtonText("Not now").onClick(() => this.close()),
+    );
   }
 
   override onClose(): void {
     this.contentEl.empty();
   }
 
-  private async openCheckout(): Promise<void> {
+  private async openCheckout(plan: BillingInterval): Promise<void> {
     if (this.isBusy) {
       return;
     }
     this.isBusy = true;
     try {
-      window.open(await startProCheckout(this.supabase));
+      window.open(await startProCheckout(this.supabase, plan));
       this.close();
       this.onCheckoutOpened();
     } catch (error) {
