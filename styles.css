@@ -123,3 +123,11 @@ body {
   display: flex;
   gap: 8px;
 }
+
+/*
+ * Obsidian leaves buttons at the default arrow cursor. Inside our modals the
+ * buttons are the whole point of the dialog, so make them read as clickable.
+ */
+.inoh-modal button {
+  cursor: pointer;
+}

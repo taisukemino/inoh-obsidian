@@ -21,6 +21,7 @@ export class AuthModal extends Modal {
   }
 
   override onOpen(): void {
+    this.modalEl.addClass("inoh-modal");
     this.render();
   }
 

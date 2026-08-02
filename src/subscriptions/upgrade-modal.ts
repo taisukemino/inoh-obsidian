@@ -38,6 +38,7 @@ export class UpgradeModal extends Modal {
   }
 
   override onOpen(): void {
+    this.modalEl.addClass("inoh-modal");
     this.render();
     void this.loadPrices();
   }
