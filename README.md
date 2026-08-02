@@ -27,18 +27,21 @@ Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you wr
 
 ```bash
 pnpm install
-pnpm dev        # watch build into $OBSIDIAN_VAULT/.obsidian/plugins/inoh/
+pnpm dev        # watch build into your vault, against the production backend
+pnpm dev:local  # same, but against a local Supabase stack (Stripe test mode)
 pnpm test       # vitest — matching engine
 pnpm typecheck  # tsc --noEmit
 pnpm build      # typecheck + minified production build to ./main.js
 ```
+
+Backend selection follows the Inoh app's `APP_ENV` convention: `.env.<APP_ENV>` is loaded on top of `.env`, and `APP_ENV` defaults to `prod`. **The production project runs live Stripe keys, so completing checkout against it charges a real card.** To exercise the upgrade flow safely, run `supabase start` in `inoh-backend`, put the URL and publishable key it prints into `.env.local`, and use `pnpm dev:local` — that stack runs Stripe test keys, so card `4242 4242 4242 4242` works. Every dev build prints which backend it targets. `pnpm build` ignores the env files entirely and always targets production, so a local URL can never ship.
 
 `pnpm dev` writes straight into a vault. It defaults to `~/Obsidian` and needs no setup if your vault lives there; otherwise copy `.env.example` to `.env` (gitignored) and point `OBSIDIAN_VAULT` at your vault's root — the folder containing `.obsidian/`. An `OBSIDIAN_VAULT` already in your environment wins over `.env`, so `OBSIDIAN_VAULT=~/Notes pnpm dev` works for a one-off. The build refuses to run if the resolved path has no `.obsidian/`, rather than creating directories somewhere unexpected. Install [hot-reload](https://github.com/pjeby/hot-reload) in the same vault and the plugin reloads on every rebuild.
 
 ```
 src/
 ├── main.ts                  # plugin wiring
-├── supabase/                # client factory, email-OTP auth, localStorage adapter
+├── supabase/                # backend URL/key (per APP_ENV), client factory, email-OTP auth
 ├── deck/deck-service.ts     # fetch + cache + deck-changed events
 ├── matching/                # deck index + token-driven matcher (pure TS, unit-tested)
 ├── editor/                  # CM6 extensions: highlight decorations, hover tooltip, inline suggestions

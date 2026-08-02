@@ -6,11 +6,15 @@ import path from "node:path";
 
 const isProductionBuild = process.argv.includes("production");
 
-// Vault paths are per-machine, so .env is gitignored. An OBSIDIAN_VAULT already
-// in the environment wins, which keeps the one-off `OBSIDIAN_VAULT=… pnpm dev`
-// form working.
-if (existsSync(".env")) {
-  process.loadEnvFile(".env");
+// Mirrors the Inoh app's APP_ENV convention: `.env.<APP_ENV>` selects the
+// backend, and a plain `.env` holds per-machine settings (the vault path).
+// Both are gitignored. Anything already in the environment wins, which keeps
+// the one-off `OBSIDIAN_VAULT=… pnpm dev` form working.
+const appEnv = process.env.APP_ENV ?? "prod";
+for (const envFile of [`.env.${appEnv}`, ".env"]) {
+  if (existsSync(envFile)) {
+    process.loadEnvFile(envFile);
+  }
 }
 
 /** Expands a leading `~`, which .env files (unlike shells) do not do themselves. */
@@ -40,6 +44,28 @@ if (!isProductionBuild && !isVault(vaultPath)) {
 const outputDir = isProductionBuild
   ? "."
   : path.join(vaultPath, ".obsidian", "plugins", "inoh");
+
+// The prod project runs live Stripe keys, so a checkout there is a real charge.
+// `APP_ENV=local pnpm dev` points at a local Supabase stack running test keys.
+const PRODUCTION_SUPABASE_URL = "https://fsgiabbxanlcaqpgrrki.supabase.co";
+const PRODUCTION_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_DvcLzEYwjUKsuGtzSJbivA_FLaRrKnh";
+
+// Reason: the published build ignores the env files rather than falling back
+// through them, so a half-finished .env.local can never ship to the store.
+const supabaseUrl = isProductionBuild
+  ? PRODUCTION_SUPABASE_URL
+  : (process.env.SUPABASE_URL ?? PRODUCTION_SUPABASE_URL);
+const supabasePublishableKey = isProductionBuild
+  ? PRODUCTION_SUPABASE_PUBLISHABLE_KEY
+  : (process.env.SUPABASE_PUBLISHABLE_KEY ?? PRODUCTION_SUPABASE_PUBLISHABLE_KEY);
+
+if (!isProductionBuild) {
+  const stripeWarning =
+    supabaseUrl === PRODUCTION_SUPABASE_URL
+      ? "  ⚠️  Stripe is in LIVE mode here — checkout charges a real card"
+      : "";
+  console.log(`APP_ENV=${appEnv}  backend=${supabaseUrl}${stripeWarning}`);
+}
 
 /**
  * Copies manifest.json and styles.css next to main.js after each dev build,
@@ -72,6 +98,10 @@ const buildContext = await esbuild.context({
   minify: isProductionBuild,
   treeShaking: true,
   logLevel: "info",
+  define: {
+    __SUPABASE_URL__: JSON.stringify(supabaseUrl),
+    __SUPABASE_PUBLISHABLE_KEY__: JSON.stringify(supabasePublishableKey),
+  },
   // Obsidian ships its own CodeMirror 6 packages. Bundling a second copy breaks
   // instanceof/facet identity and decorations silently stop rendering, so every
   // @codemirror/* and @lezer/* import must resolve to Obsidian's copy at runtime.

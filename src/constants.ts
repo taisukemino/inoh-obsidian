@@ -1,10 +1,3 @@
-/**
- * Supabase project credentials. The publishable key is anon-tier and safe to
- * ship — it is already hardcoded in the published Inoh Raycast extension.
- */
-export const SUPABASE_URL = "https://fsgiabbxanlcaqpgrrki.supabase.co";
-export const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_DvcLzEYwjUKsuGtzSJbivA_FLaRrKnh";
-
 /** The Inoh web app (Expo web export). Word detail lives at /word/<dictionaryId>. */
 export const WEB_APP_URL = "https://inoh.app";
 
@@ -19,8 +12,6 @@ export const DISCOVER_URL = `${WEB_APP_URL}/discover`;
 export const CHECKOUT_SUCCESS_URL = `${WEB_APP_URL}/checkout-success`;
 export const CHECKOUT_CANCEL_URL = `${WEB_APP_URL}/checkout-cancel`;
 
-/** Public storage bucket for word/definition/sentence audio. */
-export const AUDIO_BUCKET_URL = `${SUPABASE_URL}/storage/v1/object/public/audio`;
 
 /** Delay after the last keystroke before rescanning the viewport for deck words. */
 export const HIGHLIGHT_REBUILD_DEBOUNCE_MS = 200;

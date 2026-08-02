@@ -6,6 +6,8 @@ node_modules/
 
 # Local dev config (per-machine vault path)
 .env
+.env.local
+.env.prod
 
 # OS
 .DS_Store

@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { App } from "obsidian";
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "../constants";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config";
 import { createAuthStorage } from "./auth-storage";
 
 /**

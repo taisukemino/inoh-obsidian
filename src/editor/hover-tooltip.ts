@@ -1,7 +1,8 @@
 import type { Extension } from "@codemirror/state";
 import { hoverTooltip } from "@codemirror/view";
 import { setIcon } from "obsidian";
-import { AUDIO_BUCKET_URL, WEB_APP_URL } from "../constants";
+import { WEB_APP_URL } from "../constants";
+import { AUDIO_BUCKET_URL } from "../supabase/config";
 import type { DeckCard } from "../types";
 import type { InohHighlighterPlugin } from "./highlight-extension";
 
