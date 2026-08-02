@@ -58,12 +58,18 @@ export class InohSettingsTab extends PluginSettingTab {
   }
 
   /**
-   * Re-reads the definitions and repaints. Row names and visibility depend on
-   * auth and deck state, so sign-in, sign-out, and deck refresh all call this.
+   * Re-reads the definitions and repaints.
+   *
+   * Row `name` and `desc` are plain values, captured when the definitions are
+   * built — only `visible` is re-evaluated per render. So every async change
+   * behind the tab (sign-in, deck sync, plan lookup) has to call this, or the
+   * rows keep showing whatever was true at startup: "Signed in" instead of the
+   * email, "Deck not synced yet" after a sync, "Free plan" for a subscriber.
+   *
    * Reason: on 1.13+ `display()` does not refresh declaratively rendered
    * settings — `update()` is the only thing that does.
    */
-  private refresh(): void {
+  refresh(): void {
     this.update();
   }
 
@@ -73,7 +79,7 @@ export class InohSettingsTab extends PluginSettingTab {
    */
   private async reloadAccountState(): Promise<void> {
     this.refresh();
-    await Promise.all([this.plugin.refreshDeck(), this.plugin.refreshProStatus()]);
+    await Promise.all([this.plugin.refreshDeck(), this.plugin.refreshAccountState()]);
     this.refresh();
   }
 
@@ -109,13 +115,21 @@ export class InohSettingsTab extends PluginSettingTab {
   }
 
   private signedInDefinition(): SettingDefinition {
+    const { currentUsername, currentUserEmail } = this.plugin;
+    const cardCount = this.plugin.deckService.getCards().length;
     const fetchedAt = this.plugin.deckService.getFetchedAt();
 
+    // Accounts are created by email OTP, so a display name is optional — fall
+    // back to the email rather than showing a nameless row.
+    const accountDetails = [
+      currentUsername ? currentUserEmail : null,
+      `${cardCount} ${cardCount === 1 ? "word" : "words"}`,
+      fetchedAt ? `synced ${new Date(fetchedAt).toLocaleString()}` : "not synced yet",
+    ].filter(Boolean);
+
     return {
-      name: this.plugin.currentUserEmail ?? "Signed in",
-      desc: fetchedAt
-        ? `Deck last synced ${new Date(fetchedAt).toLocaleString()}.`
-        : "Deck not synced yet.",
+      name: currentUsername ?? currentUserEmail ?? "Signed in",
+      desc: accountDetails.join(" · "),
       visible: () => !this.isSignedOut(),
       render: (setting) => {
         setting.addButton((button) =>
@@ -155,7 +169,7 @@ export class InohSettingsTab extends PluginSettingTab {
         if (this.plugin.subscriptionCheckFailed) {
           setting.addButton((button) =>
             button.setButtonText("Retry").onClick(async () => {
-              await this.plugin.refreshProStatus();
+              await this.plugin.refreshAccountState();
               this.refresh();
             }),
           );

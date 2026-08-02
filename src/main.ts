@@ -30,6 +30,7 @@ import {
 } from "./subscriptions/subscription-service";
 import { UpgradeModal } from "./subscriptions/upgrade-modal";
 import { signOutUser } from "./supabase/auth";
+import { fetchUsername } from "./supabase/profile";
 import { createSupabaseClient } from "./supabase/client";
 import { StatusBar } from "./ui/status-bar";
 import type { DeckCache, InohSettings, PluginData } from "./types";
@@ -47,6 +48,8 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   deckService!: DeckService;
   currentUserEmail: string | null = null;
   currentUserId: string | null = null;
+  /** Display name from the Inoh app; null for accounts that never set one. */
+  currentUsername: string | null = null;
   subscription: SubscriptionState = FREE_SUBSCRIPTION;
   /** True when the last plan read failed, so "Free plan" may be wrong. */
   subscriptionCheckFailed = false;
@@ -54,6 +57,7 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   private deckCache: DeckCache | null = null;
   private matcher: DeckMatcher | null = null;
   private statusBar!: StatusBar;
+  private settingsTab!: InohSettingsTab;
   /** Blocks a second suggestion request; each one spends the daily free quota. */
   private isSuggesting = false;
   /** Which Stripe flow the user was sent to, until they come back from it. */
@@ -75,6 +79,7 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       this.deckService.on("deck-changed", () => {
         this.rebuildMatcher();
         this.statusBar.update();
+        this.settingsTab.refresh();
       }),
     );
 
@@ -86,7 +91,8 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       buildSuggestionTooltip(),
     ]);
 
-    this.addSettingTab(new InohSettingsTab(this.app, this));
+    this.settingsTab = new InohSettingsTab(this.app, this);
+    this.addSettingTab(this.settingsTab);
 
     // On mobile the selection is lost when the command palette opens, so the
     // command always runs on the whole note there — name it accordingly.
@@ -109,13 +115,14 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       this.currentUserEmail = session?.user.email ?? null;
       this.currentUserId = nextUserId;
       this.statusBar.update();
+      this.settingsTab.refresh();
 
       // The plan belongs to the account, so whoever signs in brings their own.
       // Token refreshes keep the same id and are skipped. Without this, a
       // session that arrives through this listener rather than through
       // initializeSession leaves the plan stuck at its free default.
       if (didSignedInUserChange) {
-        void this.refreshProStatus();
+        void this.refreshAccountState();
       }
     });
     this.register(() => authListener.subscription.unsubscribe());
@@ -147,6 +154,8 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     await signOutUser(this.supabase);
     await this.deckService.clear();
     this.subscription = FREE_SUBSCRIPTION;
+    this.subscriptionCheckFailed = false;
+    this.currentUsername = null;
     this.pendingStripeReturn = null;
   }
 
@@ -294,20 +303,31 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
    * records the failure — silently showing "Free plan" to a paying subscriber
    * is indistinguishable from them genuinely not having paid.
    */
-  async refreshProStatus(): Promise<void> {
-    if (!this.currentUserId) {
+  async refreshAccountState(): Promise<void> {
+    const userId = this.currentUserId;
+    if (!userId) {
       this.subscription = FREE_SUBSCRIPTION;
       this.subscriptionCheckFailed = false;
+      this.currentUsername = null;
+      this.settingsTab.refresh();
       return;
     }
     try {
-      this.subscription = await fetchSubscriptionState(this.supabase, this.currentUserId);
+      this.subscription = await fetchSubscriptionState(this.supabase, userId);
       this.subscriptionCheckFailed = false;
     } catch (error) {
       console.error("Inoh: could not read the subscription plan", error);
       this.subscription = FREE_SUBSCRIPTION;
       this.subscriptionCheckFailed = true;
     }
+    try {
+      this.currentUsername = await fetchUsername(this.supabase, userId);
+    } catch (error) {
+      // A missing display name is cosmetic; the email still identifies them.
+      console.error("Inoh: could not read the profile", error);
+      this.currentUsername = null;
+    }
+    this.settingsTab.refresh();
   }
 
   /**
@@ -361,7 +381,7 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       this.currentUserId = session?.user.id ?? null;
       this.statusBar.update();
       if (session) {
-        await Promise.all([this.deckService.refresh(), this.refreshProStatus()]);
+        await Promise.all([this.deckService.refresh(), this.refreshAccountState()]);
       }
     } catch (error) {
       // Offline or token refresh failed: keep highlighting from the cached deck.
