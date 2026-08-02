@@ -48,6 +48,8 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   currentUserEmail: string | null = null;
   currentUserId: string | null = null;
   subscription: SubscriptionState = FREE_SUBSCRIPTION;
+  /** True when the last plan read failed, so "Free plan" may be wrong. */
+  subscriptionCheckFailed = false;
 
   private deckCache: DeckCache | null = null;
   private matcher: DeckMatcher | null = null;
@@ -102,9 +104,19 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     this.registerDomEvent(window, "focus", () => void this.pickUpStripeReturn());
 
     const { data: authListener } = this.supabase.auth.onAuthStateChange((_event, session) => {
+      const nextUserId = session?.user.id ?? null;
+      const didSignedInUserChange = nextUserId !== this.currentUserId;
       this.currentUserEmail = session?.user.email ?? null;
-      this.currentUserId = session?.user.id ?? null;
+      this.currentUserId = nextUserId;
       this.statusBar.update();
+
+      // The plan belongs to the account, so whoever signs in brings their own.
+      // Token refreshes keep the same id and are skipped. Without this, a
+      // session that arrives through this listener rather than through
+      // initializeSession leaves the plan stuck at its free default.
+      if (didSignedInUserChange) {
+        void this.refreshProStatus();
+      }
     });
     this.register(() => authListener.subscription.unsubscribe());
 
@@ -277,17 +289,24 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     }
   }
 
-  /** Reads the current plan, defaulting to free when the check fails. */
+  /**
+   * Reads the current plan. Falls back to free so features stay gated, but
+   * records the failure — silently showing "Free plan" to a paying subscriber
+   * is indistinguishable from them genuinely not having paid.
+   */
   async refreshProStatus(): Promise<void> {
     if (!this.currentUserId) {
       this.subscription = FREE_SUBSCRIPTION;
+      this.subscriptionCheckFailed = false;
       return;
     }
     try {
       this.subscription = await fetchSubscriptionState(this.supabase, this.currentUserId);
+      this.subscriptionCheckFailed = false;
     } catch (error) {
       console.error("Inoh: could not read the subscription plan", error);
       this.subscription = FREE_SUBSCRIPTION;
+      this.subscriptionCheckFailed = true;
     }
   }
 

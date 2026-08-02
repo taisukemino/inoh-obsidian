@@ -152,6 +152,15 @@ export class InohSettingsTab extends PluginSettingTab {
       desc: this.planDescription(),
       visible: () => !this.isSignedOut(),
       render: (setting) => {
+        if (this.plugin.subscriptionCheckFailed) {
+          setting.addButton((button) =>
+            button.setButtonText("Retry").onClick(async () => {
+              await this.plugin.refreshProStatus();
+              this.refresh();
+            }),
+          );
+          return;
+        }
         if (canManageBilling) {
           setting.addButton((button) =>
             button.setButtonText("Manage").onClick(() => {
@@ -178,6 +187,9 @@ export class InohSettingsTab extends PluginSettingTab {
    */
   private planDescription(): string {
     const { isPro, cancelAtPeriodEnd, currentPeriodEnd } = this.plugin.subscription;
+    if (this.plugin.subscriptionCheckFailed) {
+      return "Could not check your plan. If you subscribed, this is not your real plan.";
+    }
     if (!isPro) {
       return "A limited number of suggestion requests a day.";
     }
