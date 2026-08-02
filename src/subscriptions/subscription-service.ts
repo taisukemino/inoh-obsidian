@@ -15,6 +15,36 @@ type SubscriptionRow = { plan: string; status: string };
 /** Billing interval, matching the values stripe-subscribe resolves prices for. */
 export type BillingInterval = "month" | "year";
 
+export type PlanPrice = {
+  /** Smallest currency unit, e.g. 799 for $7.99. */
+  unitAmount: number;
+  /** ISO 4217, lowercased (e.g. "usd"). */
+  currency: string;
+};
+
+/** Live prices per interval. Either may be null if Stripe has none configured. */
+export type ProPrices = Record<BillingInterval, PlanPrice | null>;
+
+/**
+ * Reads the live Inoh Pro prices from Stripe via the subscription-prices
+ * function, so the upgrade modal can show real numbers rather than a hardcoded
+ * price that goes stale the moment pricing changes.
+ *
+ * @param supabase - Signed-in Supabase client
+ * @returns The price per interval
+ * @throws {Error} When the request fails
+ */
+export async function fetchProPrices(supabase: SupabaseClient): Promise<ProPrices> {
+  const { data, error } = await supabase.functions.invoke<ProPrices>("subscription-prices", {
+    body: {},
+  });
+
+  if (error) {
+    throw await toFriendlyError(error, "Could not load prices.");
+  }
+  return { month: data?.month ?? null, year: data?.year ?? null };
+}
+
 /**
  * Asks stripe-subscribe for a hosted Stripe Checkout URL for Inoh Pro.
  *

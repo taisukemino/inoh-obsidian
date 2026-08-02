@@ -1,10 +1,13 @@
 import { App, Modal, Notice, Setting } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { planButtonLabel, yearlySavingPercent } from "./price-format";
 import {
   ActiveSubscriptionError,
+  fetchProPrices,
   openBillingPortalUrl,
   startProCheckout,
   type BillingInterval,
+  type ProPrices,
 } from "./subscription-service";
 
 /**
@@ -12,14 +15,14 @@ import {
  * between. Opened when the free daily suggestion cap is hit, and from the
  * plugin settings.
  *
- * Offers both billing intervals; the edge function maps each to a Stripe price.
- *
- * Quotes neither the prices nor the daily limit: Stripe Checkout shows the
- * current price, and the server owns the limit and names it in the message it
- * sends back. Either number baked in here goes stale the first time it changes.
+ * Offers both billing intervals, labelled with prices read live from Stripe so
+ * they cannot drift from what the user is actually charged. Nothing is
+ * hardcoded: the daily limit comes from the server's own message, and if the
+ * price lookup fails the buttons stay usable, just unlabelled.
  */
 export class UpgradeModal extends Modal {
   private isBusy = false;
+  private prices: ProPrices = { month: null, year: null };
 
   /**
    * @param reason - The server's explanation of why the upgrade is being
@@ -35,6 +38,26 @@ export class UpgradeModal extends Modal {
   }
 
   override onOpen(): void {
+    this.render();
+    void this.loadPrices();
+  }
+
+  /**
+   * Prices come from Stripe, so the modal opens immediately with bare interval
+   * labels and repaints once they arrive. A failure is not surfaced: the user
+   * came here to upgrade, and unlabelled buttons still do that.
+   */
+  private async loadPrices(): Promise<void> {
+    try {
+      this.prices = await fetchProPrices(this.supabase);
+      this.render();
+    } catch (error) {
+      console.error("Inoh: could not load Pro prices", error);
+    }
+  }
+
+  private render(): void {
+    this.contentEl.empty();
     this.setTitle("Upgrade to Inoh Pro");
 
     if (this.reason) {
@@ -49,17 +72,21 @@ export class UpgradeModal extends Modal {
       text: "Checkout opens in your browser. Come back here when you're done and your plan updates automatically.",
     });
 
+    const savingPercent = yearlySavingPercent(this.prices);
+
     new Setting(this.contentEl)
       .setName("Choose a billing interval")
-      .setDesc("Stripe shows the exact price before you pay.")
+      .setDesc("Stripe confirms the exact amount before you pay.")
       .addButton((button) =>
         button
-          .setButtonText("Yearly")
+          .setButtonText(planButtonLabel("Yearly", this.prices.year, savingPercent))
           .setCta()
           .onClick(() => void this.openCheckout("year")),
       )
       .addButton((button) =>
-        button.setButtonText("Monthly").onClick(() => void this.openCheckout("month")),
+        button
+          .setButtonText(planButtonLabel("Monthly", this.prices.month))
+          .onClick(() => void this.openCheckout("month")),
       );
 
     new Setting(this.contentEl).addButton((button) =>
