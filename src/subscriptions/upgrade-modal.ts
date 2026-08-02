@@ -1,6 +1,5 @@
 import { App, Modal, Notice, Setting } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { FREE_DAILY_SUGGESTION_LIMIT } from "../constants";
 import {
   ActiveSubscriptionError,
   openBillingPortalUrl,
@@ -12,29 +11,36 @@ import {
  * between. Opened when the free daily suggestion cap is hit, and from the
  * plugin settings.
  *
- * Deliberately quotes no price: Stripe Checkout shows the current one, and a
- * number baked into a published plugin goes stale the first time pricing moves.
+ * Quotes neither the price nor the daily limit: Stripe Checkout shows the
+ * current price, and the server owns the limit and names it in the message it
+ * sends back. Either number baked in here goes stale the first time it changes.
  */
 export class UpgradeModal extends Modal {
   private isBusy = false;
 
+  /**
+   * @param reason - The server's explanation of why the upgrade is being
+   *   offered, shown verbatim. Omitted when opened from settings.
+   */
   constructor(
     app: App,
     private readonly supabase: SupabaseClient,
-    private readonly headline: string,
+    private readonly reason: string | null,
     private readonly onCheckoutOpened: () => void,
   ) {
     super(app);
   }
 
   override onOpen(): void {
-    this.setTitle(this.headline);
+    this.setTitle("Upgrade to Inoh Pro");
 
+    if (this.reason) {
+      this.contentEl.createEl("p", { text: this.reason });
+    }
     this.contentEl.createEl("p", {
       text:
-        `Free accounts get ${FREE_DAILY_SUGGESTION_LIMIT} suggestion requests a day. ` +
-        "Inoh Pro lifts that cap and raises the deck size used for suggestions, " +
-        "so more of the words you're learning are in play.",
+        "Inoh Pro removes the daily suggestion cap and raises the deck size used " +
+        "for suggestions, so more of the words you're learning are in play.",
     });
     this.contentEl.createEl("p", {
       text: "Checkout opens in your browser. Come back here when you're done and your plan updates automatically.",

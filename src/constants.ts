@@ -22,13 +22,6 @@ export const CHECKOUT_CANCEL_URL = `${WEB_APP_URL}/checkout-cancel`;
 /** Public storage bucket for word/definition/sentence audio. */
 export const AUDIO_BUCKET_URL = `${SUPABASE_URL}/storage/v1/object/public/audio`;
 
-/**
- * Suggestion requests a free-plan user gets per day. Mirrors
- * FREE_DAILY_SUGGESTION_LIMIT in the suggest-deck-words edge function, which
- * enforces it — this copy only exists so the upgrade prompt can name a number.
- */
-export const FREE_DAILY_SUGGESTION_LIMIT = 10;
-
 /** Delay after the last keystroke before rescanning the viewport for deck words. */
 export const HIGHLIGHT_REBUILD_DEBOUNCE_MS = 200;
 

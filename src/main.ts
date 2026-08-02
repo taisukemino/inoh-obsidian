@@ -216,7 +216,9 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       );
     } catch (error) {
       if (error instanceof SuggestionLimitError) {
-        this.promptUpgrade("You've used today's free suggestions");
+        // The server owns the daily limit, so its message is the only place the
+        // real number appears — show it rather than restating it here.
+        this.promptUpgrade(error.message);
         return;
       }
       new Notice(error instanceof Error ? error.message : String(error));
@@ -230,10 +232,11 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
    * Opens Stripe Checkout for Inoh Pro. Called from the daily-limit path and
    * from the settings tab.
    *
-   * @param headline - Modal title naming why the upgrade is being offered
+   * @param reason - The server's explanation of why the upgrade is offered,
+   *   or null when the user opened this themselves from settings
    */
-  promptUpgrade(headline: string): void {
-    new UpgradeModal(this.app, this.supabase, headline, () => {
+  promptUpgrade(reason: string | null): void {
+    new UpgradeModal(this.app, this.supabase, reason, () => {
       this.isAwaitingCheckout = true;
     }).open();
   }

@@ -5,7 +5,7 @@ import {
   type SettingDefinition,
   type SettingDefinitionItem,
 } from "obsidian";
-import { DISCOVER_URL, FREE_DAILY_SUGGESTION_LIMIT, WEB_APP_URL } from "../constants";
+import { DISCOVER_URL, WEB_APP_URL } from "../constants";
 import type InohPlugin from "../main";
 import { AuthModal } from "./auth-modal";
 
@@ -146,9 +146,11 @@ export class InohSettingsTab extends PluginSettingTab {
 
     return {
       name: isPro ? "Inoh Pro" : "Free plan",
+      // The daily cap is set server-side, so no number is quoted here — the
+      // limit message names it when you actually hit it.
       desc: isPro
         ? "Unlimited suggestions."
-        : `${FREE_DAILY_SUGGESTION_LIMIT} suggestion requests a day.`,
+        : "A limited number of suggestion requests a day.",
       visible: () => !this.isSignedOut(),
       render: (setting) => {
         if (isPro) {
@@ -159,7 +161,7 @@ export class InohSettingsTab extends PluginSettingTab {
             .setButtonText("Upgrade to Pro")
             .setCta()
             .onClick(() => {
-              this.plugin.promptUpgrade("Upgrade to Inoh Pro");
+              this.plugin.promptUpgrade(null);
             }),
         );
       },
