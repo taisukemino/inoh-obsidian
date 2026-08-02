@@ -18,7 +18,12 @@ import { DeckIndex } from "./matching/deck-index";
 import { DeckMatcher } from "./matching/matcher";
 import { DEFAULT_SETTINGS } from "./settings/settings";
 import { InohSettingsTab } from "./settings/settings-tab";
-import { requestDeckWordSuggestions } from "./suggestions/suggestion-service";
+import {
+  requestDeckWordSuggestions,
+  SuggestionLimitError,
+} from "./suggestions/suggestion-service";
+import { fetchIsPro } from "./subscriptions/subscription-service";
+import { UpgradeModal } from "./subscriptions/upgrade-modal";
 import { signOutUser } from "./supabase/auth";
 import { createSupabaseClient } from "./supabase/client";
 import { StatusBar } from "./ui/status-bar";
@@ -36,10 +41,16 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   supabase!: SupabaseClient;
   deckService!: DeckService;
   currentUserEmail: string | null = null;
+  currentUserId: string | null = null;
+  isPro = false;
 
   private deckCache: DeckCache | null = null;
   private matcher: DeckMatcher | null = null;
   private statusBar!: StatusBar;
+  /** Blocks a second suggestion request; each one spends the daily free quota. */
+  private isSuggesting = false;
+  /** True between opening Stripe Checkout and seeing the subscription go Pro. */
+  private isAwaitingCheckout = false;
 
   override async onload(): Promise<void> {
     await this.loadPluginData();
@@ -80,8 +91,14 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       callback: () => void this.suggestForSelectionOrNote(),
     });
 
+    // Stripe Checkout happens in the browser, so the only signal that the user
+    // finished is Obsidian regaining focus — the same trigger the Inoh app uses
+    // when it returns to the foreground.
+    this.registerDomEvent(window, "focus", () => void this.pickUpFinishedCheckout());
+
     const { data: authListener } = this.supabase.auth.onAuthStateChange((_event, session) => {
       this.currentUserEmail = session?.user.email ?? null;
+      this.currentUserId = session?.user.id ?? null;
       this.statusBar.update();
     });
     this.register(() => authListener.subscription.unsubscribe());
@@ -112,6 +129,8 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   async signOut(): Promise<void> {
     await signOutUser(this.supabase);
     await this.deckService.clear();
+    this.isPro = false;
+    this.isAwaitingCheckout = false;
   }
 
   /**
@@ -121,6 +140,10 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
    * the command usable there.
    */
   private async suggestForSelectionOrNote(): Promise<void> {
+    if (this.isSuggesting) {
+      new Notice("Inoh is already looking — hang on.");
+      return;
+    }
     const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (!markdownView?.file) {
       new Notice("Open a note first.");
@@ -153,6 +176,9 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       ? editor.posToOffset(editor.getCursor("to"))
       : editorView.state.doc.length;
 
+    const wasTruncated = suggestionText.length > MAX_SUGGESTION_TEXT_LENGTH;
+
+    this.isSuggesting = true;
     const loadingNotice = new Notice("Inoh: looking for places to use your deck words…", 0);
     try {
       const result = await requestDeckWordSuggestions(
@@ -173,12 +199,10 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
         selectionTo,
         suggestionsWithDefinitions,
       );
+      const truncationSuffix = describeTruncation(wasTruncated);
       if (resolved.length === 0) {
-        new Notice(
-          hasSelection
-            ? "No good fits in this selection — keep writing!"
-            : "No good fits in this note — keep writing!",
-        );
+        const scope = hasSelection ? "selection" : "note";
+        new Notice(`No good fits in this ${scope} — keep writing!${truncationSuffix}`);
         return;
       }
       editorView.dispatch({ effects: setSuggestionsEffect.of(resolved) });
@@ -187,11 +211,65 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
         result.remainingSuggestionsToday !== undefined
           ? ` ${result.remainingSuggestionsToday} free suggestions left today.`
           : "";
-      new Notice(`${suggestionCount} marked — hover a phrase to apply.${quotaSuffix}`);
+      new Notice(
+        `${suggestionCount} marked — hover a phrase to apply.${quotaSuffix}${truncationSuffix}`,
+      );
     } catch (error) {
+      if (error instanceof SuggestionLimitError) {
+        this.promptUpgrade("You've used today's free suggestions");
+        return;
+      }
       new Notice(error instanceof Error ? error.message : String(error));
     } finally {
+      this.isSuggesting = false;
       loadingNotice.hide();
+    }
+  }
+
+  /**
+   * Opens Stripe Checkout for Inoh Pro. Called from the daily-limit path and
+   * from the settings tab.
+   *
+   * @param headline - Modal title naming why the upgrade is being offered
+   */
+  promptUpgrade(headline: string): void {
+    new UpgradeModal(this.app, this.supabase, headline, () => {
+      this.isAwaitingCheckout = true;
+    }).open();
+  }
+
+  /**
+   * Re-reads the plan after the user comes back from Stripe. The webhook that
+   * flips the account to Pro can land after they switch back, so this stays
+   * armed and retries on the next focus until it sees Pro.
+   */
+  private async pickUpFinishedCheckout(): Promise<void> {
+    if (!this.isAwaitingCheckout || !this.currentUserId) {
+      return;
+    }
+    try {
+      if (!(await fetchIsPro(this.supabase, this.currentUserId))) {
+        return;
+      }
+      this.isAwaitingCheckout = false;
+      this.isPro = true;
+      new Notice("You're on Inoh Pro — suggestions are unlimited.");
+    } catch (error) {
+      console.error("Inoh: could not check the subscription after checkout", error);
+    }
+  }
+
+  /** Reads the current plan, defaulting to free when the check fails. */
+  async refreshProStatus(): Promise<void> {
+    if (!this.currentUserId) {
+      this.isPro = false;
+      return;
+    }
+    try {
+      this.isPro = await fetchIsPro(this.supabase, this.currentUserId);
+    } catch (error) {
+      console.error("Inoh: could not read the subscription plan", error);
+      this.isPro = false;
     }
   }
 
@@ -229,9 +307,10 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
         data: { session },
       } = await this.supabase.auth.getSession();
       this.currentUserEmail = session?.user.email ?? null;
+      this.currentUserId = session?.user.id ?? null;
       this.statusBar.update();
       if (session) {
-        await this.deckService.refresh();
+        await Promise.all([this.deckService.refresh(), this.refreshProStatus()]);
       }
     } catch (error) {
       // Offline or token refresh failed: keep highlighting from the cached deck.
@@ -249,4 +328,22 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   private async persistData(): Promise<void> {
     await this.saveData({ settings: this.settings, deckCache: this.deckCache });
   }
+}
+
+/**
+ * Says that only the head of the text was checked. Without this the dropped
+ * tail reads as the model having missed things.
+ *
+ * @param wasTruncated - Whether the text exceeded the server's limit
+ * @returns A sentence to append to the result notice, or an empty string
+ */
+function describeTruncation(wasTruncated: boolean): string {
+  if (!wasTruncated) {
+    return "";
+  }
+  const checkedLength = MAX_SUGGESTION_TEXT_LENGTH.toLocaleString();
+  // Opening the command palette drops the selection on mobile, so only suggest
+  // selecting a section where that actually works.
+  const advice = Platform.isMobile ? "" : " — select a section to check the rest";
+  return ` Only the first ${checkedLength} characters were checked${advice}.`;
 }

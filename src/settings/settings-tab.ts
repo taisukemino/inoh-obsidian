@@ -5,7 +5,7 @@ import {
   type SettingDefinition,
   type SettingDefinitionItem,
 } from "obsidian";
-import { DISCOVER_URL, WEB_APP_URL } from "../constants";
+import { DISCOVER_URL, FREE_DAILY_SUGGESTION_LIMIT, WEB_APP_URL } from "../constants";
 import type InohPlugin from "../main";
 import { AuthModal } from "./auth-modal";
 
@@ -25,6 +25,7 @@ export class InohSettingsTab extends PluginSettingTab {
         items: [
           this.getStartedDefinition(),
           this.signedInDefinition(),
+          this.planDefinition(),
           this.discoverWordsDefinition(),
           this.emptyDeckDefinition(),
         ],
@@ -66,6 +67,16 @@ export class InohSettingsTab extends PluginSettingTab {
     this.update();
   }
 
+  /**
+   * Signing in changes the deck, the plan, and which rows are visible. Repaints
+   * once immediately so the rows flip, then again once both loads land.
+   */
+  private async reloadAccountState(): Promise<void> {
+    this.refresh();
+    await Promise.all([this.plugin.refreshDeck(), this.plugin.refreshProStatus()]);
+    this.refresh();
+  }
+
   private isSignedOut(): boolean {
     return !this.plugin.currentUserEmail;
   }
@@ -89,8 +100,7 @@ export class InohSettingsTab extends PluginSettingTab {
             .setCta()
             .onClick(() => {
               new AuthModal(this.app, this.plugin.supabase, () => {
-                void this.plugin.refreshDeck();
-                this.refresh();
+                void this.reloadAccountState();
               }).open();
             }),
         );
@@ -125,6 +135,31 @@ export class InohSettingsTab extends PluginSettingTab {
                 new Notice(error instanceof Error ? error.message : String(error));
               }
               this.refresh();
+            }),
+        );
+      },
+    };
+  }
+
+  private planDefinition(): SettingDefinition {
+    const isPro = this.plugin.isPro;
+
+    return {
+      name: isPro ? "Inoh Pro" : "Free plan",
+      desc: isPro
+        ? "Unlimited suggestions."
+        : `${FREE_DAILY_SUGGESTION_LIMIT} suggestion requests a day.`,
+      visible: () => !this.isSignedOut(),
+      render: (setting) => {
+        if (isPro) {
+          return;
+        }
+        setting.addButton((button) =>
+          button
+            .setButtonText("Upgrade to Pro")
+            .setCta()
+            .onClick(() => {
+              this.plugin.promptUpgrade("Upgrade to Inoh Pro");
             }),
         );
       },
