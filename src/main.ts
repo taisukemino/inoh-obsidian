@@ -22,7 +22,12 @@ import {
   requestDeckWordSuggestions,
   SuggestionLimitError,
 } from "./suggestions/suggestion-service";
-import { fetchIsPro } from "./subscriptions/subscription-service";
+import {
+  fetchSubscriptionState,
+  openBillingPortalUrl,
+  FREE_SUBSCRIPTION,
+  type SubscriptionState,
+} from "./subscriptions/subscription-service";
 import { UpgradeModal } from "./subscriptions/upgrade-modal";
 import { signOutUser } from "./supabase/auth";
 import { createSupabaseClient } from "./supabase/client";
@@ -42,15 +47,15 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   deckService!: DeckService;
   currentUserEmail: string | null = null;
   currentUserId: string | null = null;
-  isPro = false;
+  subscription: SubscriptionState = FREE_SUBSCRIPTION;
 
   private deckCache: DeckCache | null = null;
   private matcher: DeckMatcher | null = null;
   private statusBar!: StatusBar;
   /** Blocks a second suggestion request; each one spends the daily free quota. */
   private isSuggesting = false;
-  /** True between opening Stripe Checkout and seeing the subscription go Pro. */
-  private isAwaitingCheckout = false;
+  /** Which Stripe flow the user was sent to, until they come back from it. */
+  private pendingStripeReturn: "checkout" | "portal" | null = null;
 
   override async onload(): Promise<void> {
     await this.loadPluginData();
@@ -94,7 +99,7 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     // Stripe Checkout happens in the browser, so the only signal that the user
     // finished is Obsidian regaining focus — the same trigger the Inoh app uses
     // when it returns to the foreground.
-    this.registerDomEvent(window, "focus", () => void this.pickUpFinishedCheckout());
+    this.registerDomEvent(window, "focus", () => void this.pickUpStripeReturn());
 
     const { data: authListener } = this.supabase.auth.onAuthStateChange((_event, session) => {
       this.currentUserEmail = session?.user.email ?? null;
@@ -129,8 +134,8 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   async signOut(): Promise<void> {
     await signOutUser(this.supabase);
     await this.deckService.clear();
-    this.isPro = false;
-    this.isAwaitingCheckout = false;
+    this.subscription = FREE_SUBSCRIPTION;
+    this.pendingStripeReturn = null;
   }
 
   /**
@@ -237,7 +242,7 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
    */
   promptUpgrade(reason: string | null): void {
     new UpgradeModal(this.app, this.supabase, reason, () => {
-      this.isAwaitingCheckout = true;
+      this.pendingStripeReturn = "checkout";
     }).open();
   }
 
@@ -246,33 +251,57 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
    * flips the account to Pro can land after they switch back, so this stays
    * armed and retries on the next focus until it sees Pro.
    */
-  private async pickUpFinishedCheckout(): Promise<void> {
-    if (!this.isAwaitingCheckout || !this.currentUserId) {
+  private async pickUpStripeReturn(): Promise<void> {
+    const pendingFlow = this.pendingStripeReturn;
+    if (!pendingFlow || !this.currentUserId) {
       return;
     }
     try {
-      if (!(await fetchIsPro(this.supabase, this.currentUserId))) {
+      const wasPro = this.subscription.isPro;
+      this.subscription = await fetchSubscriptionState(this.supabase, this.currentUserId);
+
+      // The portal writes its changes before the user leaves it, so one read is
+      // enough — and it may well have cancelled rather than upgraded.
+      if (pendingFlow === "portal") {
+        this.pendingStripeReturn = null;
         return;
       }
-      this.isAwaitingCheckout = false;
-      this.isPro = true;
-      new Notice("You're on Inoh Pro — suggestions are unlimited.");
+      // Checkout's webhook can land after the user switches back, so stay armed
+      // and retry on each focus until Pro actually shows up.
+      if (!wasPro && this.subscription.isPro) {
+        this.pendingStripeReturn = null;
+        new Notice("You're on Inoh Pro — suggestions are unlimited.");
+      }
     } catch (error) {
-      console.error("Inoh: could not check the subscription after checkout", error);
+      console.error("Inoh: could not re-read the subscription after Stripe", error);
     }
   }
 
   /** Reads the current plan, defaulting to free when the check fails. */
   async refreshProStatus(): Promise<void> {
     if (!this.currentUserId) {
-      this.isPro = false;
+      this.subscription = FREE_SUBSCRIPTION;
       return;
     }
     try {
-      this.isPro = await fetchIsPro(this.supabase, this.currentUserId);
+      this.subscription = await fetchSubscriptionState(this.supabase, this.currentUserId);
     } catch (error) {
       console.error("Inoh: could not read the subscription plan", error);
-      this.isPro = false;
+      this.subscription = FREE_SUBSCRIPTION;
+    }
+  }
+
+  /**
+   * Opens the Stripe billing portal, where the user can change payment details
+   * or cancel. Reached from the settings Manage button.
+   */
+  async openBillingPortal(): Promise<void> {
+    try {
+      window.open(await openBillingPortalUrl(this.supabase));
+      // The portal can change the plan, so re-read it when the user returns.
+      this.pendingStripeReturn = "portal";
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : String(error));
     }
   }
 

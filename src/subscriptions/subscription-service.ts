@@ -9,8 +9,39 @@ import { CHECKOUT_CANCEL_URL, CHECKOUT_SUCCESS_URL } from "../constants";
  */
 export class ActiveSubscriptionError extends Error {}
 
-/** Row shape read from `subscriptions`; the plugin only needs the plan state. */
-type SubscriptionRow = { plan: string; status: string };
+/** The columns of `subscriptions` the plugin reads. */
+type SubscriptionRow = {
+  plan: string;
+  status: string;
+  stripe_subscription_id: string | null;
+  cancel_at_period_end: boolean | null;
+  current_period_end: string | null;
+};
+
+export type SubscriptionState = {
+  /** Entitled to Pro features right now. */
+  isPro: boolean;
+  /**
+   * A Stripe subscription exists that can still bill or recover — including
+   * `past_due`, where the user is not entitled but does need the billing portal
+   * to fix their card. Mirrors `hasLiveStripeSubscription` in the Inoh app.
+   */
+  hasLiveStripeSubscription: boolean;
+  /** True when Pro is winding down at the end of the paid period. */
+  cancelAtPeriodEnd: boolean;
+  /** ISO timestamp Pro lapses on, when it is winding down. */
+  currentPeriodEnd: string | null;
+};
+
+export const FREE_SUBSCRIPTION: SubscriptionState = {
+  isPro: false,
+  hasLiveStripeSubscription: false,
+  cancelAtPeriodEnd: false,
+  currentPeriodEnd: null,
+};
+
+/** Statuses where Stripe still has a subscription that can bill or recover. */
+const LIVE_STRIPE_STATUSES = new Set(["active", "trialing", "past_due"]);
 
 /** Billing interval, matching the values stripe-subscribe resolves prices for. */
 export type BillingInterval = "month" | "year";
@@ -102,7 +133,7 @@ export async function openBillingPortalUrl(supabase: SupabaseClient): Promise<st
 }
 
 /**
- * Reads whether the signed-in user is on Inoh Pro.
+ * Reads the signed-in user's subscription state.
  *
  * `plan = 'pro' AND status = 'active'` is the entitlement predicate used across
  * Inoh — the web app, the suggest-deck-words edge function, and the free card
@@ -112,20 +143,32 @@ export async function openBillingPortalUrl(supabase: SupabaseClient): Promise<st
  *
  * @param supabase - Signed-in Supabase client
  * @param userId - The signed-in user's id
- * @returns True when the account is on an active Pro subscription
+ * @returns The plan state, or the free defaults when there is no row
  * @throws {Error} When the query fails
  */
-export async function fetchIsPro(supabase: SupabaseClient, userId: string): Promise<boolean> {
+export async function fetchSubscriptionState(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<SubscriptionState> {
   const { data, error } = await supabase
     .from("subscriptions")
-    .select("plan, status")
+    .select("plan, status, stripe_subscription_id, cancel_at_period_end, current_period_end")
     .eq("user_id", userId)
     .maybeSingle<SubscriptionRow>();
 
   if (error) {
     throw new Error(`Could not check your subscription: ${error.message}`);
   }
-  return data?.plan === "pro" && data.status === "active";
+  if (!data) {
+    return FREE_SUBSCRIPTION;
+  }
+  return {
+    isPro: data.plan === "pro" && data.status === "active",
+    hasLiveStripeSubscription:
+      Boolean(data.stripe_subscription_id) && LIVE_STRIPE_STATUSES.has(data.status),
+    cancelAtPeriodEnd: data.cancel_at_period_end === true,
+    currentPeriodEnd: data.current_period_end,
+  };
 }
 
 /** Error body returned by the edge functions alongside a non-2xx status. */

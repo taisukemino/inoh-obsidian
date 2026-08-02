@@ -142,18 +142,22 @@ export class InohSettingsTab extends PluginSettingTab {
   }
 
   private planDefinition(): SettingDefinition {
-    const isPro = this.plugin.isPro;
+    const { isPro, hasLiveStripeSubscription } = this.plugin.subscription;
+    // Mirrors the Inoh app: a live-but-unhealthy subscription (past_due) is not
+    // entitled to Pro, but still needs the portal to fix its card.
+    const canManageBilling = isPro || hasLiveStripeSubscription;
 
     return {
       name: isPro ? "Inoh Pro" : "Free plan",
-      // The daily cap is set server-side, so no number is quoted here — the
-      // limit message names it when you actually hit it.
-      desc: isPro
-        ? "Unlimited suggestions."
-        : "A limited number of suggestion requests a day.",
+      desc: this.planDescription(),
       visible: () => !this.isSignedOut(),
       render: (setting) => {
-        if (isPro) {
+        if (canManageBilling) {
+          setting.addButton((button) =>
+            button.setButtonText("Manage").onClick(() => {
+              void this.plugin.openBillingPortal();
+            }),
+          );
           return;
         }
         setting.addButton((button) =>
@@ -166,6 +170,22 @@ export class InohSettingsTab extends PluginSettingTab {
         );
       },
     };
+  }
+
+  /**
+   * The daily cap is set server-side, so no number is quoted — the limit
+   * message names it when you actually hit it.
+   */
+  private planDescription(): string {
+    const { isPro, cancelAtPeriodEnd, currentPeriodEnd } = this.plugin.subscription;
+    if (!isPro) {
+      return "A limited number of suggestion requests a day.";
+    }
+    if (cancelAtPeriodEnd && currentPeriodEnd) {
+      const lapseDate = new Date(currentPeriodEnd).toLocaleDateString();
+      return `Unlimited suggestions. Cancels on ${lapseDate} — you keep Pro until then.`;
+    }
+    return "Unlimited suggestions.";
   }
 
   /** Own row below the signed-in one; the empty-deck row has its own CTA, so this hides then. */
