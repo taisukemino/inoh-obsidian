@@ -280,6 +280,10 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     try {
       const wasPro = this.subscription.isPro;
       this.subscription = await fetchSubscriptionState(this.supabase, this.currentUserId);
+      // The user is often still looking at the settings tab they launched the
+      // Stripe flow from, so repaint it with whatever the read found —
+      // including a cancellation notice, not just an upgrade.
+      this.settingsTab.refresh();
 
       // The portal writes its changes before the user leaves it, so one read is
       // enough — and it may well have cancelled rather than upgraded.

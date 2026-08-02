@@ -74,8 +74,10 @@ export class InohSettingsTab extends PluginSettingTab {
   }
 
   /**
-   * Signing in changes the deck, the plan, and which rows are visible. Repaints
-   * once immediately so the rows flip, then again once both loads land.
+   * Reloads everything shown in the Account group: deck, plan, username.
+   * Used on sign-in and by the Refresh button — one deliberately covers the
+   * other, so "I refreshed but it still shows the old plan" cannot happen.
+   * Repaints once immediately so rows flip, then again once both loads land.
    */
   private async reloadAccountState(): Promise<void> {
     this.refresh();
@@ -133,10 +135,7 @@ export class InohSettingsTab extends PluginSettingTab {
       visible: () => !this.isSignedOut(),
       render: (setting) => {
         setting.addButton((button) =>
-          button.setButtonText("Refresh deck").onClick(async () => {
-            await this.plugin.refreshDeck();
-            this.refresh();
-          }),
+          button.setButtonText("Refresh").onClick(() => void this.reloadAccountState()),
         );
         setting.addButton((button) =>
           button
@@ -234,7 +233,7 @@ export class InohSettingsTab extends PluginSettingTab {
     return {
       name: "Your deck is empty",
       desc:
-        "Add words to your deck in the Inoh app, then hit Refresh deck. " +
+        "Add words to your deck in the Inoh app, then hit Refresh. " +
         "Highlighting and suggestions start working once your deck has words.",
       visible: () => !this.isSignedOut() && this.plugin.deckService.getCards().length === 0,
       render: (setting) => {

@@ -13,7 +13,7 @@ Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you wr
 
 1. Enable the plugin, then open its settings.
 2. Click **Sign in or sign up** — enter your email and the six-digit code you receive. A new email creates an Inoh account automatically.
-3. Build your vocabulary deck at [inoh.app](https://inoh.app) (or in the Inoh iOS app), then hit **Refresh deck** — or just click the status bar item.
+3. Build your vocabulary deck at [inoh.app](https://inoh.app) (or in the Inoh iOS app), then hit **Refresh** — or just click the status bar item.
 4. Write. Deck words light up as you type; the status bar shows how many words are loaded.
 
 ## Network use disclosure
