@@ -142,3 +142,30 @@ body {
   background-color: transparent;
   border: none;
 }
+
+/* Brand icon before each app name in the settings Apps group. */
+.inoh-app-icon {
+  display: inline-flex;
+  vertical-align: text-bottom;
+  margin-right: 7px;
+}
+
+.inoh-app-icon .svg-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Linked app rows: the icon + name itself is the button. */
+.setting-item-name.inoh-app-name-link {
+  cursor: pointer;
+}
+
+.setting-item-name.inoh-app-name-link:hover {
+  color: var(--text-accent);
+}
+
+/* Unreleased app rows: muted label where the control would sit. */
+.inoh-coming-soon {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}

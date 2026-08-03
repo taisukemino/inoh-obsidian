@@ -2,11 +2,13 @@ import {
   App,
   Notice,
   PluginSettingTab,
+  setIcon,
   type SettingDefinition,
   type SettingDefinitionItem,
 } from "obsidian";
-import { DISCOVER_URL, WEB_APP_URL } from "../constants";
+import { DISCOVER_URL, RAYCAST_EXTENSION_URL, WEB_APP_URL } from "../constants";
 import type InohPlugin from "../main";
+import { APP_ICON_IDS, registerAppIcons } from "./app-icons";
 import { AuthModal } from "./auth-modal";
 
 export class InohSettingsTab extends PluginSettingTab {
@@ -15,6 +17,7 @@ export class InohSettingsTab extends PluginSettingTab {
     private readonly plugin: InohPlugin,
   ) {
     super(app, plugin);
+    registerAppIcons();
   }
 
   override getSettingDefinitions(): SettingDefinitionItem[] {
@@ -41,7 +44,45 @@ export class InohSettingsTab extends PluginSettingTab {
           },
         ],
       },
+      {
+        type: "group",
+        heading: "Apps",
+        items: this.appsDefinitions(),
+      },
     ];
+  }
+
+  /**
+   * Cross-promotion rows for the other Inoh ecosystem apps (this plugin
+   * excluded). The icon + name itself is the link — no separate button. Apps
+   * without a `url` are unreleased — the iOS App Store listing is mid-rebrand
+   * and the Chrome extension is not on the Web Store yet — so they get a muted
+   * non-clickable "Coming soon" label instead.
+   */
+  private appsDefinitions(): SettingDefinition[] {
+    const apps: { name: string; icon: string; url?: string }[] = [
+      { name: "iOS app", icon: APP_ICON_IDS.apple },
+      { name: "Web app", icon: "globe", url: WEB_APP_URL },
+      { name: "Chrome extension", icon: APP_ICON_IDS.chrome },
+      { name: "Raycast extension", icon: APP_ICON_IDS.raycast, url: RAYCAST_EXTENSION_URL },
+    ];
+    return apps.map(({ name, icon, url }) => ({
+      name,
+      render: (setting) => {
+        const iconElement = setting.nameEl.createSpan({ cls: "inoh-app-icon" });
+        setIcon(iconElement, icon);
+        setting.nameEl.prepend(iconElement);
+        if (url) {
+          setting.nameEl.addClass("inoh-app-name-link");
+          setting.nameEl.setAttribute("role", "link");
+          setting.nameEl.addEventListener("click", () => {
+            window.open(url);
+          });
+        } else {
+          setting.controlEl.createSpan({ cls: "inoh-coming-soon", text: "Coming soon" });
+        }
+      },
+    }));
   }
 
   override getControlValue(key: string): unknown {

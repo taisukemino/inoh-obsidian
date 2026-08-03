@@ -12,6 +12,13 @@ export const DISCOVER_URL = `${WEB_APP_URL}/discover`;
 export const CHECKOUT_SUCCESS_URL = `${WEB_APP_URL}/checkout-success`;
 export const CHECKOUT_CANCEL_URL = `${WEB_APP_URL}/checkout-cancel`;
 
+/**
+ * Product pages for the other Inoh ecosystem apps, shown in the Apps settings
+ * group. The iOS app (mid-rebrand) and Chrome extension (unpublished) have no
+ * URL yet and render as "Coming soon" — add their constants once live.
+ */
+export const RAYCAST_EXTENSION_URL = "https://www.raycast.com/tai/joey-vocab";
+
 
 /** Delay after the last keystroke before rescanning the viewport for deck words. */
 export const HIGHLIGHT_REBUILD_DEBOUNCE_MS = 200;
