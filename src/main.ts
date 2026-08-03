@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, Platform, Plugin } from "obsidian";
+import { MarkdownView, Notice, Platform, Plugin, type Editor } from "obsidian";
 import type { EditorView } from "@codemirror/view";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DeckService } from "./deck/deck-service";
@@ -9,7 +9,13 @@ import {
 } from "./editor/highlight-extension";
 import { buildHoverTooltip } from "./editor/hover-tooltip";
 import {
-  buildSuggestionTooltip,
+  applySuggestion,
+  dismissAllSuggestions,
+  pickNextSuggestion,
+} from "./editor/suggestion-actions";
+import { buildSuggestionTooltip } from "./editor/suggestion-card";
+import { buildTapToOpenCards } from "./editor/tap-modal";
+import {
   resolveSuggestionRanges,
   setSuggestionsEffect,
   suggestionField,
@@ -37,6 +43,14 @@ import type { DeckCache, InohSettings, PluginData } from "./types";
 
 /** Server-side text limit (MAX_PARAGRAPH_LENGTH) in the suggest-deck-words edge function. */
 const MAX_SUGGESTION_TEXT_LENGTH = 2_000;
+
+/**
+ * Reaches the CodeMirror view behind an Obsidian editor. `cm` is not in the
+ * public typings but is the documented community way to attach CM6 behaviour.
+ */
+function getEditorView(editor: Editor): EditorView | null {
+  return (editor as unknown as { cm?: EditorView }).cm ?? null;
+}
 
 /**
  * Inoh for Obsidian: highlights words from the user's Inoh vocabulary deck
@@ -89,6 +103,9 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       buildHoverTooltip(highlighterPlugin),
       suggestionField,
       buildSuggestionTooltip(),
+      // Hover does not exist on touch, so mobile gets the same cards in a
+      // tap-opened modal. Desktop is untouched — the handler is never added.
+      ...(Platform.isMobile ? [buildTapToOpenCards(this.app, highlighterPlugin)] : []),
     ]);
 
     this.settingsTab = new InohSettingsTab(this.app, this);
@@ -102,6 +119,41 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
         ? "Suggest deck words for entire note"
         : "Suggest deck words for selection or note",
       callback: () => void this.suggestForSelectionOrNote(),
+    });
+
+    // Palette twins of the tooltip buttons: a hover-free path on mobile and a
+    // hotkey-friendly one on desktop.
+    this.addCommand({
+      id: "apply-next-suggestion",
+      name: "Apply next suggestion",
+      editorCallback: (editor) => {
+        const editorView = getEditorView(editor);
+        if (!editorView) {
+          return;
+        }
+        const pending = editorView.state.field(suggestionField);
+        const next = pickNextSuggestion(pending, editorView.state.selection.main.head);
+        if (!next) {
+          new Notice("No pending suggestions — run Suggest deck words first.");
+          return;
+        }
+        applySuggestion(editorView, next.id);
+      },
+    });
+    this.addCommand({
+      id: "dismiss-all-suggestions",
+      name: "Dismiss all suggestions",
+      editorCallback: (editor) => {
+        const editorView = getEditorView(editor);
+        if (!editorView) {
+          return;
+        }
+        if (editorView.state.field(suggestionField).length === 0) {
+          new Notice("No pending suggestions.");
+          return;
+        }
+        dismissAllSuggestions(editorView);
+      },
     });
 
     // Stripe Checkout happens in the browser, so the only signal that the user
@@ -192,7 +244,7 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       new Notice("Your deck is empty — add words at inoh.app, then refresh from the settings.");
       return;
     }
-    const editorView = (editor as unknown as { cm?: EditorView }).cm;
+    const editorView = getEditorView(editor);
     if (!editorView) {
       new Notice("Could not access the editor.");
       return;
@@ -368,7 +420,7 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       if (!(leaf.view instanceof MarkdownView)) {
         continue;
       }
-      const editorView = (leaf.view.editor as unknown as { cm?: EditorView }).cm;
+      const editorView = getEditorView(leaf.view.editor);
       if (editorView) {
         dispatchDeckRefresh(editorView);
       }

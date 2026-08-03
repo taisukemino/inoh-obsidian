@@ -131,3 +131,14 @@ body {
 .inoh-modal button {
   cursor: pointer;
 }
+
+/*
+ * Inside a tap modal the card is the modal's content, not a floating tooltip —
+ * drop the tooltip chrome and width cap so it sits naturally in the dialog.
+ */
+.inoh-modal .inoh-tooltip {
+  max-width: none;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+}

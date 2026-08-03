@@ -1,5 +1,5 @@
-import { StateEffect, StateField, type Extension } from "@codemirror/state";
-import { Decoration, EditorView, hoverTooltip, tooltips } from "@codemirror/view";
+import { StateEffect, StateField } from "@codemirror/state";
+import { Decoration, EditorView } from "@codemirror/view";
 import type { DeckWordSuggestion } from "../suggestions/suggestion-service";
 
 /** A suggestion anchored to a live document range. */
@@ -89,79 +89,3 @@ export function resolveSuggestionRanges(
   return resolved;
 }
 
-/** Builds the hover tooltip with Apply / Dismiss actions for a marked phrase. */
-export function buildSuggestionTooltip(): Extension {
-  // Reason: Obsidian's workspace leaves use CSS containment, which clips
-  // even fixed-position tooltips at the pane edge and paints the sidebar
-  // over them. Rendering into document.body escapes the pane entirely, so
-  // CodeMirror can keep the tooltip fully visible inside the window.
-  const tooltipPositioning = tooltips({ position: "fixed", parent: document.body });
-  const suggestionHoverTooltip = hoverTooltip(
-    (view, pos) => {
-      const active = view.state
-        .field(suggestionField)
-        .find((candidate) => candidate.from <= pos && pos <= candidate.to);
-      if (!active) {
-        return null;
-      }
-      return {
-        pos: active.from,
-        end: active.to,
-        above: true,
-        create: () => ({ dom: renderSuggestionTooltip(view, active) }),
-      };
-    },
-    { hoverTime: 150 },
-  );
-  return [tooltipPositioning, suggestionHoverTooltip];
-}
-
-function renderSuggestionTooltip(view: EditorView, active: ActiveSuggestion): HTMLElement {
-  const { suggestion } = active;
-  const root = createDiv({ cls: "inoh-tooltip" });
-
-  root.createDiv({ cls: "inoh-suggestion-word", text: suggestion.word });
-  if (suggestion.definition) {
-    root.createDiv({ cls: "inoh-tooltip-definition", text: suggestion.definition });
-  }
-
-  const diff = root.createDiv({ cls: "inoh-suggestion-diff" });
-  diff.createSpan({ cls: "inoh-suggestion-original", text: suggestion.original });
-  diff.createSpan({ text: " → " });
-  diff.createSpan({ cls: "inoh-suggestion-replacement", text: suggestion.replacement });
-
-  if (suggestion.explanation) {
-    root.createDiv({ cls: "inoh-suggestion-explanation", text: suggestion.explanation });
-  }
-
-  const buttons = root.createDiv({ cls: "inoh-suggestion-buttons" });
-
-  const applyButton = buttons.createEl("button", { text: "Apply", cls: "mod-cta" });
-  applyButton.addEventListener("click", () => {
-    // Re-read the range: edits since the tooltip opened may have moved it.
-    const current = view.state
-      .field(suggestionField)
-      .find((candidate) => candidate.id === active.id);
-    if (!current) {
-      return;
-    }
-    view.dispatch({
-      changes: { from: current.from, to: current.to, insert: suggestion.replacement },
-      effects: dismissSuggestionEffect.of(active.id),
-    });
-  });
-
-  const dismissButton = buttons.createEl("button", { text: "Dismiss" });
-  dismissButton.addEventListener("click", () => {
-    view.dispatch({ effects: dismissSuggestionEffect.of(active.id) });
-  });
-
-  if (view.state.field(suggestionField).length > 1) {
-    const dismissAllButton = buttons.createEl("button", { text: "Dismiss all" });
-    dismissAllButton.addEventListener("click", () => {
-      view.dispatch({ effects: clearSuggestionsEffect.of(null) });
-    });
-  }
-
-  return root;
-}
