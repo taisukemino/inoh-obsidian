@@ -8,11 +8,6 @@ import {
   type MatcherProvider,
 } from "./editor/highlight-extension";
 import { buildHoverTooltip } from "./editor/hover-tooltip";
-import {
-  applySuggestion,
-  dismissAllSuggestions,
-  pickNextSuggestion,
-} from "./editor/suggestion-actions";
 import { buildSuggestionTooltip } from "./editor/suggestion-card";
 import { buildTapToOpenCards } from "./editor/tap-modal";
 import {
@@ -119,41 +114,6 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
         ? "Suggest deck words for entire note"
         : "Suggest deck words for selection or note",
       callback: () => void this.suggestForSelectionOrNote(),
-    });
-
-    // Palette twins of the tooltip buttons: a hover-free path on mobile and a
-    // hotkey-friendly one on desktop.
-    this.addCommand({
-      id: "apply-next-suggestion",
-      name: "Apply next suggestion",
-      editorCallback: (editor) => {
-        const editorView = getEditorView(editor);
-        if (!editorView) {
-          return;
-        }
-        const pending = editorView.state.field(suggestionField);
-        const next = pickNextSuggestion(pending, editorView.state.selection.main.head);
-        if (!next) {
-          new Notice("No pending suggestions — run Suggest deck words first.");
-          return;
-        }
-        applySuggestion(editorView, next.id);
-      },
-    });
-    this.addCommand({
-      id: "dismiss-all-suggestions",
-      name: "Dismiss all suggestions",
-      editorCallback: (editor) => {
-        const editorView = getEditorView(editor);
-        if (!editorView) {
-          return;
-        }
-        if (editorView.state.field(suggestionField).length === 0) {
-          new Notice("No pending suggestions.");
-          return;
-        }
-        dismissAllSuggestions(editorView);
-      },
     });
 
     // Stripe Checkout happens in the browser, so the only signal that the user

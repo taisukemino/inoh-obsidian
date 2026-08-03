@@ -40,26 +40,3 @@ export function dismissSuggestion(view: EditorView, suggestionId: number): void 
 export function dismissAllSuggestions(view: EditorView): void {
   view.dispatch({ effects: clearSuggestionsEffect.of(null) });
 }
-
-/**
- * Picks the suggestion the "Apply next suggestion" command should act on:
- * the first one starting at or after the cursor, wrapping to the earliest in
- * the note when the cursor is past them all.
- *
- * @param suggestions - Pending suggestions, in any order
- * @param cursorPosition - Current cursor offset
- * @returns The suggestion to act on, or null when none are pending
- */
-export function pickNextSuggestion<T extends { from: number }>(
-  suggestions: readonly T[],
-  cursorPosition: number,
-): T | null {
-  if (suggestions.length === 0) {
-    return null;
-  }
-  const inDocumentOrder = [...suggestions].sort((a, b) => a.from - b.from);
-  const atOrAfterCursor = inDocumentOrder.find(
-    (suggestion) => suggestion.from >= cursorPosition,
-  );
-  return atOrAfterCursor ?? inDocumentOrder[0];
-}
