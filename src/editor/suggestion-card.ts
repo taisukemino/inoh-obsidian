@@ -1,6 +1,6 @@
 import type { Extension } from "@codemirror/state";
 import { hoverTooltip, tooltips, type EditorView } from "@codemirror/view";
-import { applySuggestion, dismissAllSuggestions, dismissSuggestion } from "./suggestion-actions";
+import { applySuggestion, dismissSuggestion } from "./suggestion-actions";
 import { suggestionField, type ActiveSuggestion } from "./suggestion-extension";
 
 /** Builds the hover tooltip with Apply / Dismiss actions for a marked phrase. */
@@ -66,25 +66,20 @@ export function renderSuggestionCard(
 
   const buttons = root.createDiv({ cls: "inoh-suggestion-buttons" });
 
-  const applyButton = buttons.createEl("button", { text: "Apply", cls: "mod-cta" });
+  const applyButton = buttons.createEl("button", { text: "Apply", cls: "inoh-suggestion-apply" });
   applyButton.addEventListener("click", () => {
     applySuggestion(view, active.id);
     onAfterAction?.();
   });
 
-  const dismissButton = buttons.createEl("button", { text: "Dismiss" });
+  const dismissButton = buttons.createEl("button", {
+    text: "Dismiss",
+    cls: "inoh-suggestion-dismiss",
+  });
   dismissButton.addEventListener("click", () => {
     dismissSuggestion(view, active.id);
     onAfterAction?.();
   });
-
-  if (view.state.field(suggestionField).length > 1) {
-    const dismissAllButton = buttons.createEl("button", { text: "Dismiss all" });
-    dismissAllButton.addEventListener("click", () => {
-      dismissAllSuggestions(view);
-      onAfterAction?.();
-    });
-  }
 
   return root;
 }

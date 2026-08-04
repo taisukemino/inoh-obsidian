@@ -3,6 +3,7 @@
    color (correct answers, success states). */
 body {
   --inoh-brand: #e1442a;
+  --inoh-brand-deep: #c63a22;
   --inoh-green: #12bb4f;
   /* Quiet Canvas card surface — fixed colors from the Inoh app's theme,
      matching the browser extension's word card, so the card stands out from
@@ -12,6 +13,7 @@ body {
   --inoh-card-text: #1a1815;
   --inoh-card-text-secondary: #57534c;
   --inoh-card-text-muted: #8b857c;
+  --inoh-card-button-bg: #f0ece5;
 }
 
 /* Deck words highlighted in the editor. Green and solid on purpose: the
@@ -126,6 +128,17 @@ body {
   text-decoration: none;
 }
 
+/* Obsidian mobile paints every button as a filled pill; the remove action is
+   a quiet text link, so strip that back off with a heavier selector. */
+.is-mobile .inoh-tooltip button.inoh-tooltip-remove {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  height: auto;
+  color: var(--inoh-card-text-muted);
+}
+
 /* Phrases in the note with a pending deck-word suggestion */
 /* Phrases with a pending suggestion. Green on purpose: a suggestion is an
    opportunity, not an error, and green can never be mistaken for the
@@ -173,6 +186,40 @@ body {
   gap: 8px;
 }
 
+/* Apply / Dismiss mirror the app's buttons: red pill primary, light-gray pill
+   secondary (colors from the Inoh app's theme.ts). The .is-mobile variants
+   out-weigh Obsidian mobile's own filled-pill button styling. */
+.inoh-tooltip button.inoh-suggestion-apply,
+.inoh-tooltip button.inoh-suggestion-dismiss,
+.is-mobile .inoh-tooltip button.inoh-suggestion-apply,
+.is-mobile .inoh-tooltip button.inoh-suggestion-dismiss {
+  border: none;
+  box-shadow: none;
+  height: auto;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.inoh-tooltip button.inoh-suggestion-apply,
+.is-mobile .inoh-tooltip button.inoh-suggestion-apply {
+  background-color: var(--inoh-brand);
+  color: #ffffff;
+}
+
+.inoh-tooltip button.inoh-suggestion-apply:hover,
+.inoh-tooltip button.inoh-suggestion-apply:active {
+  background-color: var(--inoh-brand-deep);
+}
+
+.inoh-tooltip button.inoh-suggestion-dismiss,
+.is-mobile .inoh-tooltip button.inoh-suggestion-dismiss {
+  background-color: var(--inoh-card-button-bg);
+  color: var(--inoh-card-text-secondary);
+}
+
 /*
  * Obsidian leaves buttons at the default arrow cursor. Inside our modals the
  * buttons are the whole point of the dialog, so make them read as clickable.
@@ -198,9 +245,13 @@ body {
   display: none;
 }
 
-.inoh-modal .modal-close-button {
+/* Obsidian mobile paints the close button as a dark theme-colored circle,
+   which clashes with the fixed cream card — repaint it in card colors. The
+   .is-mobile prefix out-weighs the app's own mobile selector. */
+.inoh-modal .modal-close-button,
+.is-mobile .modal.inoh-modal .modal-close-button {
   color: var(--inoh-card-text-secondary);
-  background-color: rgba(26, 24, 21, 0.06);
+  background-color: rgba(26, 24, 21, 0.07);
 }
 
 /* Keep the first row clear of the absolutely-positioned close button. */

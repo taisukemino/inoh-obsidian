@@ -8,6 +8,25 @@ import { suggestionField } from "./suggestion-extension";
 import type { InohHighlighterPlugin } from "./highlight-extension";
 
 /**
+ * iOS dispatches synthesized mouse events (mousedown/mouseup/click) a beat
+ * after the touch that closed a modal. By then the modal is gone, so they
+ * land on the editor underneath — focusing it (keyboard pops up), placing the
+ * cursor, and re-opening the card when the close button happened to sit over
+ * a highlighted word. Every editor mouse event inside this window after a
+ * close is that ghost and gets swallowed.
+ */
+const GHOST_CLICK_WINDOW_MS = 500;
+let lastCardModalClosedAt = 0;
+
+function swallowGhostEventAfterClose(event: MouseEvent): boolean {
+  if (Date.now() - lastCardModalClosedAt >= GHOST_CLICK_WINDOW_MS) {
+    return false;
+  }
+  event.preventDefault();
+  return true;
+}
+
+/**
  * Shows one editor card — a deck word or a suggestion — in a modal. Modals are
  * the touch stand-in for hover tooltips: same rendered content, but reachable
  * with a tap and dismissable with the standard close affordances.
@@ -29,6 +48,7 @@ class EditorCardModal extends Modal {
   }
 
   override onClose(): void {
+    lastCardModalClosedAt = Date.now();
     this.contentEl.empty();
   }
 }
@@ -51,7 +71,12 @@ export function buildTapToOpenCards(
   onRemoveCard: (card: DeckCard) => Promise<boolean>,
 ): Extension {
   return EditorView.domEventHandlers({
+    mousedown: swallowGhostEventAfterClose,
+    mouseup: swallowGhostEventAfterClose,
     click: (event, view) => {
+      if (swallowGhostEventAfterClose(event)) {
+        return true;
+      }
       const tappedPosition = view.posAtCoords({ x: event.clientX, y: event.clientY });
       if (tappedPosition === null) {
         return false;

@@ -1,9 +1,5 @@
 import type { EditorView } from "@codemirror/view";
-import {
-  clearSuggestionsEffect,
-  dismissSuggestionEffect,
-  suggestionField,
-} from "./suggestion-extension";
+import { dismissSuggestionEffect, suggestionField } from "./suggestion-extension";
 
 /**
  * Applies one pending suggestion: replaces its phrase with the rewrite and
@@ -34,9 +30,4 @@ export function applySuggestion(view: EditorView, suggestionId: number): boolean
 /** Removes one pending suggestion without touching the text. */
 export function dismissSuggestion(view: EditorView, suggestionId: number): void {
   view.dispatch({ effects: dismissSuggestionEffect.of(suggestionId) });
-}
-
-/** Removes every pending suggestion without touching the text. */
-export function dismissAllSuggestions(view: EditorView): void {
-  view.dispatch({ effects: clearSuggestionsEffect.of(null) });
 }
