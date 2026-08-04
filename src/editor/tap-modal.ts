@@ -1,6 +1,7 @@
 import type { Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { App, Modal } from "obsidian";
+import type { DeckCard } from "../types";
 import { renderDeckWordCard } from "./deck-word-card";
 import { renderSuggestionCard } from "./suggestion-card";
 import { suggestionField } from "./suggestion-extension";
@@ -39,10 +40,12 @@ class EditorCardModal extends Modal {
  *
  * @param app - Used to open the modal
  * @param highlighterPlugin - Source of the deck-word matches (no second scan)
+ * @param onRemoveCard - Removes the card from the deck; resolves true on success
  */
 export function buildTapToOpenCards(
   app: App,
   highlighterPlugin: InohHighlighterPlugin,
+  onRemoveCard: (card: DeckCard) => Promise<boolean>,
 ): Extension {
   return EditorView.domEventHandlers({
     click: (event, view) => {
@@ -69,8 +72,10 @@ export function buildTapToOpenCards(
         (candidate) => candidate.from <= tappedPosition && tappedPosition <= candidate.to,
       );
       if (match) {
-        new EditorCardModal(app, (containerEl) => {
-          containerEl.appendChild(renderDeckWordCard(match.card));
+        new EditorCardModal(app, (containerEl, close) => {
+          containerEl.appendChild(
+            renderDeckWordCard(match.card, { onRemove: onRemoveCard, afterRemove: close }),
+          );
         }).open();
       }
       // Never claim the event: the tap should still place the cursor.

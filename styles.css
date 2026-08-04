@@ -71,10 +71,42 @@ body {
   font-style: italic;
 }
 
-.inoh-tooltip-state {
+/* Footer row: card state on the left, remove action on the right. */
+.inoh-tooltip-footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   margin-top: 6px;
+}
+
+.inoh-tooltip-state {
   color: var(--text-faint);
   font-size: var(--font-ui-smaller);
+}
+
+/* Quiet text button: removal should be reachable, not inviting. */
+.inoh-tooltip-remove {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  height: auto;
+  cursor: pointer;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.inoh-tooltip-remove:hover {
+  color: var(--inoh-brand);
+}
+
+.inoh-tooltip-remove:disabled {
+  cursor: default;
+  color: var(--text-faint);
+  text-decoration: none;
 }
 
 /* Phrases in the note with a pending deck-word suggestion */

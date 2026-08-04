@@ -34,7 +34,7 @@ import { signOutUser } from "./supabase/auth";
 import { fetchUsername } from "./supabase/profile";
 import { createSupabaseClient } from "./supabase/client";
 import { StatusBar } from "./ui/status-bar";
-import type { DeckCache, InohSettings, PluginData } from "./types";
+import type { DeckCache, DeckCard, InohSettings, PluginData } from "./types";
 
 /** Server-side text limit (MAX_PARAGRAPH_LENGTH) in the suggest-deck-words edge function. */
 const MAX_SUGGESTION_TEXT_LENGTH = 2_000;
@@ -93,14 +93,17 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     );
 
     const highlighterPlugin = buildHighlightViewPlugin(this);
+    const onRemoveCard = (card: DeckCard) => this.removeCardFromDeck(card);
     this.registerEditorExtension([
       highlighterPlugin,
-      buildHoverTooltip(highlighterPlugin),
+      buildHoverTooltip(highlighterPlugin, onRemoveCard),
       suggestionField,
       buildSuggestionTooltip(),
       // Hover does not exist on touch, so mobile gets the same cards in a
       // tap-opened modal. Desktop is untouched — the handler is never added.
-      ...(Platform.isMobile ? [buildTapToOpenCards(this.app, highlighterPlugin)] : []),
+      ...(Platform.isMobile
+        ? [buildTapToOpenCards(this.app, highlighterPlugin, onRemoveCard)]
+        : []),
     ]);
 
     this.settingsTab = new InohSettingsTab(this.app, this);
@@ -159,6 +162,24 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       await this.deckService.refresh();
     } catch (error) {
       new Notice(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  /**
+   * Removes a card from the deck, surfacing the outcome as a Notice.
+   * Called from the deck-word card's Remove button.
+   *
+   * @param card - The deck card to remove
+   * @returns True when the card was removed
+   */
+  async removeCardFromDeck(card: DeckCard): Promise<boolean> {
+    try {
+      await this.deckService.removeCard(card.id);
+      new Notice(`Removed "${card.dictionary.word}" from your deck.`);
+      return true;
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : String(error));
+      return false;
     }
   }
 

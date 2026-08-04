@@ -103,6 +103,42 @@ export class DeckService extends Events {
     }
   }
 
+  /**
+   * Deletes one card from Supabase and drops it from the cached deck,
+   * discarding its learning progress. Emits `"deck-changed"` so highlights,
+   * the status bar, and the settings tab update without a full refetch.
+   *
+   * @param cardId - The user_cards row id to delete
+   * @throws {Error} When the user is signed out or the delete fails
+   */
+  async removeCard(cardId: string): Promise<void> {
+    const {
+      data: { session },
+    } = await this.supabase.auth.getSession();
+    if (!session) {
+      throw new Error("Sign in to edit your deck.");
+    }
+
+    // Reason: the user_id filter is defence in depth on top of RLS,
+    // mirroring the Inoh app's remove hook.
+    const { error } = await this.supabase
+      .from("user_cards")
+      .delete()
+      .eq("id", cardId)
+      .eq("user_id", session.user.id);
+    if (error) {
+      throw new Error(`Failed to remove the word: ${error.message}`);
+    }
+
+    this.cards = this.cards.filter((card) => card.id !== cardId);
+    await this.persistCache({
+      fetchedAt: this.fetchedAt ?? Date.now(),
+      cards: this.cards,
+      decks: this.decks,
+    });
+    this.trigger("deck-changed");
+  }
+
   /** Clears the in-memory deck and cache (called on sign-out). */
   async clear(): Promise<void> {
     this.cards = [];
