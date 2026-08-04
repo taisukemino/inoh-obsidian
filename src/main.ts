@@ -96,14 +96,14 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     const onRemoveCard = (card: DeckCard) => this.removeCardFromDeck(card);
     this.registerEditorExtension([
       highlighterPlugin,
-      buildHoverTooltip(highlighterPlugin, onRemoveCard),
       suggestionField,
-      buildSuggestionTooltip(),
-      // Hover does not exist on touch, so mobile gets the same cards in a
-      // tap-opened modal. Desktop is untouched — the handler is never added.
+      // Touch has no hover, so mobile gets the cards in a tap-opened modal.
+      // The hover tooltips must stay desktop-only: iOS synthesizes mouse
+      // events on tap, so registering them on mobile opens the tooltip and
+      // the modal at once.
       ...(Platform.isMobile
         ? [buildTapToOpenCards(this.app, highlighterPlugin, onRemoveCard)]
-        : []),
+        : [buildHoverTooltip(highlighterPlugin, onRemoveCard), buildSuggestionTooltip()]),
     ]);
 
     this.settingsTab = new InohSettingsTab(this.app, this);
