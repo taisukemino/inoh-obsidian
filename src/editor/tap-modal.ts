@@ -15,17 +15,16 @@ import type { InohHighlighterPlugin } from "./highlight-extension";
 class EditorCardModal extends Modal {
   constructor(
     app: App,
-    private readonly title: string,
     private readonly buildContent: (containerEl: HTMLElement, close: () => void) => void,
   ) {
     super(app);
+    // Closing must not hand focus back to the editor: restoring the selection
+    // scrolls the note to the cursor and pops the on-screen keyboard.
+    this.shouldRestoreSelection = false;
   }
 
   override onOpen(): void {
     this.modalEl.addClass("inoh-modal");
-    // Without a title the modal header renders as a blank band above the
-    // card, which reads as broken styling.
-    this.setTitle(this.title);
     this.buildContent(this.contentEl, () => this.close());
   }
 
@@ -65,7 +64,7 @@ export function buildTapToOpenCards(
         .field(suggestionField)
         .find((candidate) => candidate.from <= tappedPosition && tappedPosition <= candidate.to);
       if (activeSuggestion) {
-        new EditorCardModal(app, "Suggestion", (containerEl, close) => {
+        new EditorCardModal(app, (containerEl, close) => {
           containerEl.appendChild(renderSuggestionCard(view, activeSuggestion, close));
         }).open();
         return false;
@@ -76,7 +75,7 @@ export function buildTapToOpenCards(
         (candidate) => candidate.from <= tappedPosition && tappedPosition <= candidate.to,
       );
       if (match) {
-        new EditorCardModal(app, "Deck word", (containerEl, close) => {
+        new EditorCardModal(app, (containerEl, close) => {
           containerEl.appendChild(
             renderDeckWordCard(match.card, { onRemove: onRemoveCard, afterRemove: close }),
           );

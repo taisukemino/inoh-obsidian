@@ -4,6 +4,14 @@
 body {
   --inoh-brand: #e1442a;
   --inoh-green: #12bb4f;
+  /* Quiet Canvas card surface — fixed colors from the Inoh app's theme,
+     matching the browser extension's word card, so the card stands out from
+     the note on every Obsidian theme instead of blending into it. */
+  --inoh-card-bg: #fbf9f6;
+  --inoh-card-border: #ddd8d0;
+  --inoh-card-text: #1a1815;
+  --inoh-card-text-secondary: #57534c;
+  --inoh-card-text-muted: #8b857c;
 }
 
 /* Deck words highlighted in the editor. Green and solid on purpose: the
@@ -22,12 +30,21 @@ body {
    workspace sidebars. */
 .inoh-tooltip {
   max-width: 320px;
-  padding: 8px 10px;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
+  padding: 10px 12px;
+  background-color: var(--inoh-card-bg);
+  color: var(--inoh-card-text);
+  border: 1px solid var(--inoh-card-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(26, 24, 21, 0.14);
   font-size: var(--font-ui-small);
   z-index: var(--layer-tooltip);
+}
+
+/* CodeMirror's base theme puts its own background and border on the tooltip
+   wrapper; the card carries all the chrome instead. */
+.cm-tooltip:has(> .inoh-tooltip) {
+  background-color: transparent;
+  border: none;
 }
 
 .inoh-tooltip-header {
@@ -39,7 +56,7 @@ body {
 
 .inoh-tooltip-word {
   font-weight: var(--font-bold);
-  color: var(--text-normal);
+  color: var(--inoh-card-text);
   text-decoration: none;
 }
 
@@ -50,7 +67,7 @@ body {
 
 .inoh-tooltip-audio {
   padding: 2px;
-  color: var(--text-muted);
+  color: var(--inoh-card-text-muted);
 }
 
 .inoh-tooltip-audio:hover {
@@ -58,16 +75,16 @@ body {
 }
 
 .inoh-tooltip-phonetic {
-  color: var(--text-muted);
+  color: var(--inoh-card-text-muted);
 }
 
 .inoh-tooltip-definition {
-  color: var(--text-normal);
+  color: var(--inoh-card-text);
 }
 
 .inoh-tooltip-example {
   margin-top: 4px;
-  color: var(--text-muted);
+  color: var(--inoh-card-text-secondary);
   font-style: italic;
 }
 
@@ -81,7 +98,7 @@ body {
 }
 
 .inoh-tooltip-state {
-  color: var(--text-faint);
+  color: var(--inoh-card-text-muted);
   font-size: var(--font-ui-smaller);
 }
 
@@ -93,7 +110,7 @@ body {
   padding: 0;
   height: auto;
   cursor: pointer;
-  color: var(--text-faint);
+  color: var(--inoh-card-text-muted);
   font-size: var(--font-ui-smaller);
   text-decoration: underline;
   white-space: nowrap;
@@ -105,7 +122,7 @@ body {
 
 .inoh-tooltip-remove:disabled {
   cursor: default;
-  color: var(--text-faint);
+  color: var(--inoh-card-text-muted);
   text-decoration: none;
 }
 
@@ -137,18 +154,18 @@ body {
 }
 
 .inoh-suggestion-explanation {
-  color: var(--text-muted);
+  color: var(--inoh-card-text-secondary);
   font-size: var(--font-ui-small);
   margin-bottom: 8px;
 }
 
 .inoh-suggestion-original {
-  color: var(--text-muted);
+  color: var(--inoh-card-text-muted);
   text-decoration: line-through;
 }
 
 .inoh-suggestion-replacement {
-  color: var(--text-normal);
+  color: var(--inoh-card-text);
 }
 
 .inoh-suggestion-buttons {
@@ -165,6 +182,34 @@ body {
 }
 
 /*
+ * The tap modal IS the card: the dialog takes the Quiet Canvas surface and
+ * the inner card drops its own chrome, so mobile shows one cream card instead
+ * of a card floating inside a theme-colored dialog.
+ */
+.modal.inoh-modal {
+  background-color: var(--inoh-card-bg);
+  color: var(--inoh-card-text);
+}
+
+/* No title: the word itself is the card's header. Hiding the whole header
+   removes the blank band it otherwise paints (the close button sits outside
+   it, absolutely positioned). */
+.inoh-modal .modal-header {
+  display: none;
+}
+
+.inoh-modal .modal-close-button {
+  color: var(--inoh-card-text-secondary);
+  background-color: rgba(26, 24, 21, 0.06);
+}
+
+/* Keep the first row clear of the absolutely-positioned close button. */
+.inoh-modal .inoh-tooltip-header,
+.inoh-modal .inoh-suggestion-word {
+  padding-right: 44px;
+}
+
+/*
  * Inside a tap modal the card is the modal's content, not a floating tooltip —
  * drop the tooltip chrome and width cap so it sits naturally in the dialog.
  */
@@ -173,6 +218,7 @@ body {
   padding: 0;
   background-color: transparent;
   border: none;
+  box-shadow: none;
 }
 
 /* Brand icon before each app name in the settings Apps group. */
