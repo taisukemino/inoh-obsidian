@@ -105,10 +105,18 @@ export function buildHighlightViewPlugin(provider: MatcherProvider): InohHighlig
       const mark = Decoration.mark({ class: provider.getHighlightClass() });
       const builder = new RangeSetBuilder<Decoration>();
       const matches: DeckMatch[] = [];
+      // Reason: a word repeated across a note gets one underline, not twenty.
+      // Ranges arrive in document order, so the kept match is the first one
+      // the reader encounters.
+      const highlightedCardIds = new Set<string>();
 
       for (const { from, to } of view.visibleRanges) {
         const text = view.state.doc.sliceString(from, to);
         for (const match of matcher.scanText(text, from)) {
+          if (highlightedCardIds.has(match.card.id)) {
+            continue;
+          }
+          highlightedCardIds.add(match.card.id);
           matches.push(match);
           builder.add(match.from, match.to, mark);
         }
