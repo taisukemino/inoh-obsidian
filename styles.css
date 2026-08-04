@@ -67,9 +67,13 @@ body {
   text-decoration: underline;
 }
 
+/* The header row aligns on text baselines; an icon has none, so center the
+   audio button against the row height instead (same fix as the extension). */
 .inoh-tooltip-audio {
   padding: 2px;
   color: var(--inoh-card-text-muted);
+  align-self: center;
+  line-height: 0;
 }
 
 .inoh-tooltip-audio:hover {

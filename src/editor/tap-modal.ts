@@ -44,6 +44,10 @@ class EditorCardModal extends Modal {
 
   override onOpen(): void {
     this.modalEl.addClass("inoh-modal");
+    // Remove from the DOM rather than hide with CSS: on mobile the close
+    // button is rendered outside modalEl, where .inoh-modal-scoped rules
+    // never match. Tapping outside the card closes the modal.
+    this.containerEl.querySelector(".modal-close-button")?.remove();
     this.buildContent(this.contentEl, () => this.close());
   }
 
