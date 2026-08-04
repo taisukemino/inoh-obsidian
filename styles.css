@@ -245,19 +245,11 @@ body {
   display: none;
 }
 
-/* Obsidian mobile paints the close button as a dark theme-colored circle,
-   which clashes with the fixed cream card — repaint it in card colors. The
-   .is-mobile prefix out-weighs the app's own mobile selector. */
+/* No close button: tapping outside the card closes the modal, and the X was
+   both visually heavy and a ghost-click trap on iOS. */
 .inoh-modal .modal-close-button,
 .is-mobile .modal.inoh-modal .modal-close-button {
-  color: var(--inoh-card-text-secondary);
-  background-color: rgba(26, 24, 21, 0.07);
-}
-
-/* Keep the first row clear of the absolutely-positioned close button. */
-.inoh-modal .inoh-tooltip-header,
-.inoh-modal .inoh-suggestion-word {
-  padding-right: 44px;
+  display: none;
 }
 
 /*
