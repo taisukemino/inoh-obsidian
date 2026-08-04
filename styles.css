@@ -90,18 +90,13 @@ body {
   font-style: italic;
 }
 
-/* Footer row: card state on the left, remove action on the right. */
+/* Footer row: the remove action, kept on the right. */
 .inoh-tooltip-footer {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
   margin-top: 6px;
-}
-
-.inoh-tooltip-state {
-  color: var(--inoh-card-text-muted);
-  font-size: var(--font-ui-smaller);
 }
 
 /* Quiet text button: removal should be reachable, not inviting. */

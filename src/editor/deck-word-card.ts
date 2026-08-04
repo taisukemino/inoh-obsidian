@@ -51,7 +51,6 @@ export function renderDeckWordCard(card: DeckCard, options: DeckWordCardOptions)
     root.createDiv({ cls: "inoh-tooltip-example", text: dictionary.example_sentence });
   }
   const footer = root.createDiv({ cls: "inoh-tooltip-footer" });
-  footer.createDiv({ cls: "inoh-tooltip-state", text: `Card state: ${card.card_state}` });
   footer.appendChild(buildRemoveButton(card, options));
 
   return root;
