@@ -103,8 +103,10 @@ body {
   margin-top: 6px;
 }
 
-/* Quiet text button: removal should be reachable, not inviting. */
-.inoh-tooltip-remove {
+/* Quiet text button: removal should be reachable, not inviting. The button.*
+   selector out-weighs Obsidian's button:not(.clickable-icon) rule, which
+   otherwise paints it as a filled pill on both desktop and mobile. */
+button.inoh-tooltip-remove {
   background: none;
   border: none;
   box-shadow: none;
@@ -117,25 +119,14 @@ body {
   white-space: nowrap;
 }
 
-.inoh-tooltip-remove:hover {
+button.inoh-tooltip-remove:hover {
   color: var(--inoh-brand);
 }
 
-.inoh-tooltip-remove:disabled {
+button.inoh-tooltip-remove:disabled {
   cursor: default;
   color: var(--inoh-card-text-muted);
   text-decoration: none;
-}
-
-/* Obsidian mobile paints every button as a filled pill; the remove action is
-   a quiet text link, so strip that back off with a heavier selector. */
-.is-mobile .inoh-tooltip button.inoh-tooltip-remove {
-  background: none;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-  height: auto;
-  color: var(--inoh-card-text-muted);
 }
 
 /* Phrases in the note with a pending deck-word suggestion */
@@ -237,18 +228,87 @@ body {
   color: var(--inoh-card-text);
 }
 
-/* No title: the word itself is the card's header. Hiding the whole header
-   removes the blank band it otherwise paints (the close button sits outside
-   it, absolutely positioned). */
-.inoh-modal .modal-header {
+/* Card modals only (word/suggestion cards): no title — the word itself is
+   the card's header. Hiding the whole header removes the blank band it
+   otherwise paints. Dialog modals (sign-in, upgrade) keep theirs. */
+.inoh-card-modal .modal-header {
   display: none;
 }
 
-/* No close button: tapping outside the card closes the modal, and the X was
-   both visually heavy and a ghost-click trap on iOS. */
-.inoh-modal .modal-close-button,
-.is-mobile .modal.inoh-modal .modal-close-button {
+/* Card modals only: no close button — tapping outside the card closes the
+   modal, and the X was both visually heavy and a ghost-click trap on iOS.
+   The modal removes the element on open; this is the backstop. Mobile names
+   it modal-header-button, desktop modal-close-button. */
+.inoh-card-modal .modal-close-button,
+.inoh-card-modal .modal-header-button {
   display: none;
+}
+
+/* Dialog modals share the cream surface, so their text, dividers, and inputs
+   use the fixed card palette — theme variables are light-on-dark in dark
+   themes and wash out on cream. */
+.inoh-modal .modal-title,
+.inoh-modal .setting-item-name {
+  color: var(--inoh-card-text);
+}
+
+.inoh-modal .modal-content,
+.inoh-modal .setting-item-description {
+  color: var(--inoh-card-text-secondary);
+}
+
+.inoh-modal .setting-item {
+  border-top-color: var(--inoh-card-border);
+}
+
+.inoh-modal input[type="text"] {
+  background-color: #ffffff;
+  border: 1px solid var(--inoh-card-border);
+  color: var(--inoh-card-text);
+}
+
+.inoh-modal input[type="text"]::placeholder {
+  color: #b4aea4;
+}
+
+.inoh-modal .modal-close-button,
+.inoh-modal .modal-header-button {
+  color: var(--inoh-card-text-secondary);
+  background-color: rgba(26, 24, 21, 0.07);
+}
+
+/* Primary actions use the app's red, not the Obsidian theme accent. */
+.inoh-modal button.mod-cta {
+  background-color: var(--inoh-brand);
+  color: #ffffff;
+}
+
+.inoh-modal button.mod-cta:hover,
+.inoh-modal button.mod-cta:active {
+  background-color: var(--inoh-brand-deep);
+}
+
+/* Quiet link-style action under a modal's primary button. */
+.inoh-modal-link-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+button.inoh-modal-link {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  height: auto;
+  cursor: pointer;
+  color: var(--inoh-card-text-secondary);
+  font-size: var(--font-ui-small);
+  text-decoration: underline;
+}
+
+button.inoh-modal-link:hover {
+  color: var(--inoh-brand);
 }
 
 /*

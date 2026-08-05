@@ -1,4 +1,4 @@
-import type { Extension } from "@codemirror/state";
+import { EditorSelection, type Extension } from "@codemirror/state";
 import { hoverTooltip, tooltips, type EditorView } from "@codemirror/view";
 import { applySuggestion, dismissSuggestion } from "./suggestion-actions";
 import { suggestionField, type ActiveSuggestion } from "./suggestion-extension";
@@ -18,8 +18,12 @@ export function buildSuggestionTooltip(): Extension {
       if (!active) {
         return null;
       }
+      // Anchor to the phrase's portion on the hovered visual line: a wrapped
+      // phrase starts on an earlier line, and a tooltip anchored there can sit
+      // too far from the pointer to reach before the hover check hides it.
+      const hoveredLineStart = view.moveToLineBoundary(EditorSelection.cursor(pos), false).head;
       return {
-        pos: active.from,
+        pos: Math.max(active.from, hoveredLineStart),
         end: active.to,
         above: true,
         create: () => ({ dom: renderSuggestionCard(view, active) }),

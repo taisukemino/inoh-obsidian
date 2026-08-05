@@ -3,6 +3,7 @@ import { EditorView } from "@codemirror/view";
 import { App, Modal } from "obsidian";
 import type { DeckCard } from "../types";
 import { renderDeckWordCard } from "./deck-word-card";
+import { removeModalCloseButtons } from "./remove-modal-close-buttons";
 import { renderSuggestionCard } from "./suggestion-card";
 import { suggestionField } from "./suggestion-extension";
 import type { InohHighlighterPlugin } from "./highlight-extension";
@@ -43,11 +44,8 @@ class EditorCardModal extends Modal {
   }
 
   override onOpen(): void {
-    this.modalEl.addClass("inoh-modal");
-    // Remove from the DOM rather than hide with CSS: on mobile the close
-    // button is rendered outside modalEl, where .inoh-modal-scoped rules
-    // never match. Tapping outside the card closes the modal.
-    this.containerEl.querySelector(".modal-close-button")?.remove();
+    this.modalEl.addClass("inoh-modal", "inoh-card-modal");
+    removeModalCloseButtons(this.containerEl);
     this.buildContent(this.contentEl, () => this.close());
   }
 

@@ -78,20 +78,23 @@ export class AuthModal extends Modal {
         text.inputEl.focus();
       });
 
-    new Setting(this.contentEl)
-      .addButton((button) =>
-        button
-          .setButtonText("Verify")
-          .setCta()
-          .onClick(() => void this.verifyCode()),
-      )
-      .addButton((button) =>
-        button.setButtonText("Use a different email").onClick(() => {
-          this.step = "email";
-          this.code = "";
-          this.render();
-        }),
-      );
+    new Setting(this.contentEl).addButton((button) =>
+      button
+        .setButtonText("Verify")
+        .setCta()
+        .onClick(() => void this.verifyCode()),
+    );
+
+    const linkRow = this.contentEl.createDiv({ cls: "inoh-modal-link-row" });
+    const switchEmailLink = linkRow.createEl("button", {
+      text: "Use a different email",
+      cls: "inoh-modal-link",
+    });
+    switchEmailLink.addEventListener("click", () => {
+      this.step = "email";
+      this.code = "";
+      this.render();
+    });
   }
 
   private async sendCode(): Promise<void> {
