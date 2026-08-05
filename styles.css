@@ -271,10 +271,15 @@ button.inoh-tooltip-remove:disabled {
   color: #b4aea4;
 }
 
-.inoh-modal .modal-close-button,
-.inoh-modal .modal-header-button {
+/* Desktop dialogs keep their small ×, recolored for the cream surface. */
+.inoh-modal .modal-close-button {
   color: var(--inoh-card-text-secondary);
   background-color: rgba(26, 24, 21, 0.07);
+}
+
+/* Mobile's dialog X (an oversized circle) is removed on open; backstop. */
+.inoh-modal .modal-header-button {
+  display: none;
 }
 
 /* Primary actions use the app's red, not the Obsidian theme accent. */

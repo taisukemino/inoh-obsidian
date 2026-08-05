@@ -1,5 +1,6 @@
-import { App, Modal, Notice, Setting } from "obsidian";
+import { App, Modal, Notice, Platform, Setting } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { removeModalCloseButtons } from "../editor/remove-modal-close-buttons";
 import { requestEmailCode, verifyEmailCode } from "../supabase/auth";
 
 /**
@@ -22,6 +23,11 @@ export class AuthModal extends Modal {
 
   override onOpen(): void {
     this.modalEl.addClass("inoh-modal");
+    // Mobile's dialog X is an oversized circle that fights the cream card;
+    // tap-outside and swipe-down still close. Desktop keeps its small ×.
+    if (Platform.isMobile) {
+      removeModalCloseButtons(this.containerEl);
+    }
     this.render();
   }
 
