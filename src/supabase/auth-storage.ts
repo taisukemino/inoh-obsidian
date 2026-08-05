@@ -1,4 +1,5 @@
 import type { App } from "obsidian";
+import { SUPABASE_URL } from "./config";
 
 /**
  * Supabase auth storage backed by Obsidian's vault-scoped local storage.
@@ -26,4 +27,20 @@ export function createAuthStorage(app: App): SupabaseAuthStorage {
     // Obsidian clears the entry when the value is null.
     removeItem: (key) => app.saveLocalStorage(namespacedKey(key), null),
   };
+}
+
+/** supabase-js's default storage key: `sb-<project-ref>-auth-token`. */
+const SESSION_STORAGE_KEY = `sb-${new URL(SUPABASE_URL).hostname.split(".")[0]}-auth-token`;
+
+/**
+ * Removes the persisted Supabase session outright.
+ *
+ * supabase-js skips its own storage cleanup when sign-out errors before the
+ * revoke step (e.g. the session is already missing), which can leave a broken
+ * session record behind to resurface on the next launch.
+ *
+ * @param app - Obsidian app the session storage is scoped to
+ */
+export function clearStoredSession(app: App): void {
+  createAuthStorage(app).removeItem(SESSION_STORAGE_KEY);
 }

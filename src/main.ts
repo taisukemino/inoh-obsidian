@@ -31,6 +31,7 @@ import {
 } from "./subscriptions/subscription-service";
 import { UpgradeModal } from "./subscriptions/upgrade-modal";
 import { signOutUser } from "./supabase/auth";
+import { clearStoredSession } from "./supabase/auth-storage";
 import { fetchUsername } from "./supabase/profile";
 import { createSupabaseClient } from "./supabase/client";
 import { StatusBar } from "./ui/status-bar";
@@ -191,11 +192,21 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
 
   async signOut(): Promise<void> {
     await signOutUser(this.supabase);
+    // supabase-js leaves the stored session behind when the sign-out errored
+    // early (session already missing) — make the local removal unconditional.
+    clearStoredSession(this.app);
     await this.deckService.clear();
     this.subscription = FREE_SUBSCRIPTION;
     this.subscriptionCheckFailed = false;
     this.currentUsername = null;
     this.pendingStripeReturn = null;
+    // Normally the SIGNED_OUT auth event clears these, but that event never
+    // fires when the session was already missing — clear them directly so
+    // the account row cannot stay stuck on "Sign out".
+    this.currentUserEmail = null;
+    this.currentUserId = null;
+    this.statusBar.update();
+    this.settingsTab.refresh();
   }
 
   /**
