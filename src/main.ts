@@ -119,6 +119,12 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       callback: () => void this.suggestForSelectionOrNote(),
     });
 
+    this.addCommand({
+      id: "toggle-highlighting",
+      name: "Toggle deck word highlighting",
+      callback: () => void this.toggleHighlighting(),
+    });
+
     // Stripe Checkout happens in the browser, so the only signal that the user
     // finished is Obsidian regaining focus — the same trigger the Inoh app uses
     // when it returns to the foreground.
@@ -384,6 +390,18 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   async saveSettings(): Promise<void> {
     await this.persistData();
     this.rebuildMatcher();
+  }
+
+  /** Command: flip deck-word highlighting, mirrored by the settings toggle. */
+  private async toggleHighlighting(): Promise<void> {
+    this.settings.highlightEnabled = !this.settings.highlightEnabled;
+    await this.saveSettings();
+    this.settingsTab.refresh();
+    new Notice(
+      this.settings.highlightEnabled
+        ? "Deck word highlighting on."
+        : "Deck word highlighting off.",
+    );
   }
 
   /**

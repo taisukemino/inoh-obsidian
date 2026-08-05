@@ -1,4 +1,4 @@
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { AuthSessionMissingError, type SupabaseClient, type User } from "@supabase/supabase-js";
 
 /**
  * Requests a one-time login code to be emailed to the given address.
@@ -61,7 +61,12 @@ export async function verifyEmailCode(
 export async function signOutUser(supabase: SupabaseClient): Promise<void> {
   const { error } = await supabase.auth.signOut();
 
-  if (error) {
+  // A missing session means the stored session already expired or was
+  // revoked — the signed-out state the user asked for is already reached.
+  // Treating it as an error left the account stuck: the plugin's local
+  // state was never cleared, so settings kept showing a signed-in account
+  // that could not sign out.
+  if (error && !(error instanceof AuthSessionMissingError)) {
     throw new Error(error.message);
   }
 }

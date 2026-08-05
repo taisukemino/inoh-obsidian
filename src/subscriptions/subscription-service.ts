@@ -172,7 +172,7 @@ export async function fetchSubscriptionState(
 }
 
 /** Error body returned by the edge functions alongside a non-2xx status. */
-type SubscriptionErrorBody = { error?: string; code?: string };
+type SubscriptionErrorBody = { error?: string; code?: string; detail?: string | null };
 
 async function toFriendlyError(error: unknown, fallbackMessage: string): Promise<Error> {
   if (error instanceof FunctionsHttpError) {
@@ -185,7 +185,10 @@ async function toFriendlyError(error: unknown, fallbackMessage: string): Promise
         );
       }
       if (body.error) {
-        return new Error(body.error);
+        // The edge functions put the upstream (Stripe) message in `detail` —
+        // without it, failures like a missing live-mode portal configuration
+        // are indistinguishable from network blips.
+        return new Error(body.detail ? `${body.error} ${body.detail}` : body.error);
       }
     } catch {
       // Fall through to the generic message.
