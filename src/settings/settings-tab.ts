@@ -8,6 +8,7 @@ import {
 } from "obsidian";
 import { DISCOVER_URL, RAYCAST_EXTENSION_URL, WEB_APP_URL } from "../constants";
 import type InohPlugin from "../main";
+import { openExternalUrl } from "../ui/open-external-url";
 import { APP_ICON_IDS, registerAppIcons } from "./app-icons";
 import { AuthModal } from "./auth-modal";
 
@@ -76,7 +77,7 @@ export class InohSettingsTab extends PluginSettingTab {
           setting.nameEl.addClass("inoh-app-name-link");
           setting.nameEl.setAttribute("role", "link");
           setting.nameEl.addEventListener("click", () => {
-            window.open(url);
+            openExternalUrl(url);
           });
         } else {
           setting.controlEl.createSpan({ cls: "inoh-coming-soon", text: "Coming soon" });
@@ -263,7 +264,7 @@ export class InohSettingsTab extends PluginSettingTab {
       render: (setting) => {
         setting.addButton((button) =>
           button.setButtonText("Open inoh.app").onClick(() => {
-            window.open(DISCOVER_URL);
+            openExternalUrl(DISCOVER_URL);
           }),
         );
       },
@@ -283,7 +284,7 @@ export class InohSettingsTab extends PluginSettingTab {
             .setButtonText("Open inoh.app")
             .setCta()
             .onClick(() => {
-              window.open(DISCOVER_URL);
+              openExternalUrl(DISCOVER_URL);
             }),
         );
       },

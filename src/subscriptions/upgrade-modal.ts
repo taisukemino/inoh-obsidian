@@ -1,6 +1,7 @@
 import { App, Modal, Notice, Platform, Setting } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { removeModalCloseButtons } from "../editor/remove-modal-close-buttons";
+import { openExternalUrl } from "../ui/open-external-url";
 import { planButtonLabel, yearlySavingPercent } from "./price-format";
 import {
   ActiveSubscriptionError,
@@ -111,7 +112,7 @@ export class UpgradeModal extends Modal {
     }
     this.isBusy = true;
     try {
-      window.open(await startProCheckout(this.supabase, plan));
+      openExternalUrl(await startProCheckout(this.supabase, plan));
       this.close();
       this.onCheckoutOpened();
     } catch (error) {
@@ -131,7 +132,7 @@ export class UpgradeModal extends Modal {
    */
   private async openBillingPortal(): Promise<void> {
     try {
-      window.open(await openBillingPortalUrl(this.supabase));
+      openExternalUrl(await openBillingPortalUrl(this.supabase));
       this.close();
       this.onCheckoutOpened();
     } catch (error) {

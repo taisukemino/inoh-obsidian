@@ -34,6 +34,7 @@ import { signOutUser } from "./supabase/auth";
 import { clearStoredSession } from "./supabase/auth-storage";
 import { fetchUsername } from "./supabase/profile";
 import { createSupabaseClient } from "./supabase/client";
+import { openExternalUrl } from "./ui/open-external-url";
 import { StatusBar } from "./ui/status-bar";
 import type { DeckCache, DeckCard, InohSettings, PluginData } from "./types";
 
@@ -390,7 +391,7 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
    */
   async openBillingPortal(): Promise<void> {
     try {
-      window.open(await openBillingPortalUrl(this.supabase));
+      openExternalUrl(await openBillingPortalUrl(this.supabase));
       // The portal can change the plan, so re-read it when the user returns.
       this.pendingStripeReturn = "portal";
     } catch (error) {
