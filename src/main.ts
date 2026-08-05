@@ -111,15 +111,17 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     this.settingsTab = new InohSettingsTab(this.app, this);
     this.addSettingTab(this.settingsTab);
 
+    // Suggestions are disabled until their quality improves — uncomment to
+    // bring the command back.
     // On mobile the selection is lost when the command palette opens, so the
     // command always runs on the whole note there — name it accordingly.
-    this.addCommand({
-      id: "suggest-deck-words",
-      name: Platform.isMobile
-        ? "Suggest deck words for entire note"
-        : "Suggest deck words for selection or note",
-      callback: () => void this.suggestForSelectionOrNote(),
-    });
+    // this.addCommand({
+    //   id: "suggest-deck-words",
+    //   name: Platform.isMobile
+    //     ? "Suggest deck words for entire note"
+    //     : "Suggest deck words for selection or note",
+    //   callback: () => void this.suggestForSelectionOrNote(),
+    // });
 
     this.addCommand({
       id: "toggle-highlighting",

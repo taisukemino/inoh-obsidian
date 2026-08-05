@@ -224,14 +224,16 @@ export class InohSettingsTab extends PluginSettingTab {
           );
           return;
         }
-        setting.addButton((button) =>
-          button
-            .setButtonText("Upgrade to Pro")
-            .setCta()
-            .onClick(() => {
-              this.plugin.promptUpgrade(null);
-            }),
-        );
+        // Suggestions are disabled until their quality improves, and Pro's
+        // pitch is entirely about them — uncomment to bring the upsell back.
+        // setting.addButton((button) =>
+        //   button
+        //     .setButtonText("Upgrade to Pro")
+        //     .setCta()
+        //     .onClick(() => {
+        //       this.plugin.promptUpgrade(null);
+        //     }),
+        // );
       },
     };
   }
@@ -245,14 +247,19 @@ export class InohSettingsTab extends PluginSettingTab {
     if (this.plugin.subscriptionCheckFailed) {
       return "Could not check your plan. If you subscribed, this is not your real plan.";
     }
+    // Suggestions are disabled until their quality improves, so the plan copy
+    // must not mention them — restore the commented strings when they return.
     if (!isPro) {
-      return "A limited number of suggestion requests a day.";
+      // return "A limited number of suggestion requests a day.";
+      return "";
     }
     if (cancelAtPeriodEnd && currentPeriodEnd) {
       const lapseDate = new Date(currentPeriodEnd).toLocaleDateString();
-      return `Unlimited suggestions. Cancels on ${lapseDate} — you keep Pro until then.`;
+      // return `Unlimited suggestions. Cancels on ${lapseDate} — you keep Pro until then.`;
+      return `Cancels on ${lapseDate} — you keep Pro until then.`;
     }
-    return "Unlimited suggestions.";
+    // return "Unlimited suggestions.";
+    return "";
   }
 
   /** Own row below the signed-in one; the empty-deck row has its own CTA, so this hides then. */
@@ -274,9 +281,14 @@ export class InohSettingsTab extends PluginSettingTab {
   private emptyDeckDefinition(): SettingDefinition {
     return {
       name: "Your deck is empty",
+      // Suggestions are disabled until their quality improves — the original
+      // copy mentioning them is kept below for when they return.
+      // desc:
+      //   "Add words to your deck in the Inoh app, then hit Refresh. " +
+      //   "Highlighting and suggestions start working once your deck has words.",
       desc:
         "Add words to your deck in the Inoh app, then hit Refresh. " +
-        "Highlighting and suggestions start working once your deck has words.",
+        "Highlighting starts working once your deck has words.",
       visible: () => !this.isSignedOut() && this.plugin.deckService.getCards().length === 0,
       render: (setting) => {
         setting.addButton((button) =>

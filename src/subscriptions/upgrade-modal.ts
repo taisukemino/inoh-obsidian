@@ -71,11 +71,14 @@ export class UpgradeModal extends Modal {
     if (this.reason) {
       this.contentEl.createEl("p", { text: this.reason });
     }
-    this.contentEl.createEl("p", {
-      text:
-        "Inoh Pro removes the daily suggestion cap and raises the deck size used " +
-        "for suggestions, so more of the words you're learning are in play.",
-    });
+    // Suggestions are disabled until their quality improves — this modal is
+    // currently unreachable (the suggest command and the Upgrade button are
+    // both commented out), but keep its pitch suggestion-free regardless.
+    // this.contentEl.createEl("p", {
+    //   text:
+    //     "Inoh Pro removes the daily suggestion cap and raises the deck size used " +
+    //     "for suggestions, so more of the words you're learning are in play.",
+    // });
     this.contentEl.createEl("p", {
       text: "Checkout opens in your browser. Come back here when you're done and your plan updates automatically.",
     });

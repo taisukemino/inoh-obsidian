@@ -1,12 +1,18 @@
 # Inoh for Obsidian
 
+<!-- Suggestions are disabled until their quality improves. Original tagline:
 Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you write and suggests places to use them — so you actually use what you're learning.
+-->
+Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you write — so you actually use what you're learning.
 
 ## Features
 
 - **Deck-word highlighting.** Words from your deck get a dotted underline as you write, including inflected forms (*crossed* for *cross*, *went* for *go*) and multi-word idioms (*counted my blessings* for *count one's blessings*, *gave the idea up* for *give up*). Matching is exact against real English forms — *brain* never lights up *brainy*.
-- **Hover — or tap — to review.** Hovering a highlighted word shows its definition, phonetic, example sentence, and pronunciation audio, with a link to the word in the Inoh app — plus a "Remove from deck" action for words you've finished learning. On mobile, where hover doesn't exist, tapping a highlighted word or suggested phrase opens the same card in a dialog.
+- **Hover — or tap — to review.** Hovering a highlighted word shows its definition, phonetic, example sentence, and pronunciation audio, with a link to the word in the Inoh app — plus a "Remove from deck" action for words you've finished learning. On mobile, where hover doesn't exist, tapping a highlighted word opens the same card in a dialog.
+<!-- Suggestions are disabled until their quality improves. Original bullets:
+- **Hover — or tap — to review.** … On mobile, where hover doesn't exist, tapping a highlighted word or suggested phrase opens the same card in a dialog.
 - **AI suggestions.** Run **Suggest deck words for selection or note** — it works on the selected passage, or the entire note when nothing is selected. On mobile the selection is lost when the command palette opens, so there the command is named **Suggest deck words for entire note** and always covers the whole note. Phrases that could be rewritten with one of your deck words get a wavy underline; hover one to see the deck word, its definition, the rewrite, and a one-sentence explanation of why it fits — then Apply or Dismiss. Free accounts get a limited number of suggestion requests per day; Inoh Pro is unlimited — you can upgrade from the plugin settings without leaving Obsidian.
+-->
 - **Works offline.** Your deck is cached locally, so highlighting keeps working without a connection.
 
 ## Getting started
@@ -19,7 +25,10 @@ Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you wr
 ## Network use disclosure
 
 - The plugin talks to Inoh's backend (Supabase) to sign you in and download your vocabulary deck.
+<!-- Suggestions are disabled until their quality improves. Original disclosure:
 - When you run the suggestion command, your selected text (up to 2,000 characters) and your deck words are sent to Inoh's backend, which uses OpenAI to generate suggestions. Nothing else from your vault is ever uploaded.
+-->
+- Nothing from your vault is ever uploaded.
 - If you choose to upgrade, the plugin asks Inoh's backend for a Stripe Checkout link and opens it in your browser. Payment details go to Stripe and are never seen by the plugin; it only reads back whether your account is on the free or Pro plan.
 - Auth tokens are stored in device-local storage, never in vault files, so they are not carried along by vault sync services.
 
