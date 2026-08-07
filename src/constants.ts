@@ -15,9 +15,11 @@ export const CHECKOUT_CANCEL_URL = `${WEB_APP_URL}/checkout-cancel`;
 
 /**
  * Product pages for the other Inoh ecosystem apps, shown in the Apps settings
- * group. The iOS app (mid-rebrand) and Chrome extension (unpublished) have no
- * URL yet and render as "Coming soon" — add their constants once live.
+ * group. The iOS app (mid-rebrand) has no URL yet and renders as
+ * "Coming soon" — add its constant once live.
  */
+export const CHROME_EXTENSION_URL =
+  "https://chromewebstore.google.com/detail/fihdhfkhbocbgmnhdigkljknabnjeoai?utm_source=item-share-cb";
 export const RAYCAST_EXTENSION_URL = "https://www.raycast.com/tai/joey-vocab";
 
 

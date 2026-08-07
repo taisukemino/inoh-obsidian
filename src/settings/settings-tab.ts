@@ -6,7 +6,7 @@ import {
   type SettingDefinition,
   type SettingDefinitionItem,
 } from "obsidian";
-import { DISCOVER_URL, RAYCAST_EXTENSION_URL, WEB_APP_URL } from "../constants";
+import { CHROME_EXTENSION_URL, DISCOVER_URL, RAYCAST_EXTENSION_URL, WEB_APP_URL } from "../constants";
 import type InohPlugin from "../main";
 import { openExternalUrl } from "../ui/open-external-url";
 import { APP_ICON_IDS, registerAppIcons } from "./app-icons";
@@ -57,14 +57,13 @@ export class InohSettingsTab extends PluginSettingTab {
    * Cross-promotion rows for the other Inoh ecosystem apps (this plugin
    * excluded). The icon + name itself is the link — no separate button. Apps
    * without a `url` are unreleased — the iOS App Store listing is mid-rebrand
-   * and the Chrome extension is not on the Web Store yet — so they get a muted
-   * non-clickable "Coming soon" label instead.
+   * — so they get a muted non-clickable "Coming soon" label instead.
    */
   private appsDefinitions(): SettingDefinition[] {
     const apps: { name: string; icon: string; url?: string }[] = [
       { name: "iOS app", icon: APP_ICON_IDS.apple },
       { name: "Web app", icon: "globe", url: WEB_APP_URL },
-      { name: "Chrome extension", icon: APP_ICON_IDS.chrome },
+      { name: "Chrome extension", icon: APP_ICON_IDS.chrome, url: CHROME_EXTENSION_URL },
       { name: "Raycast extension", icon: APP_ICON_IDS.raycast, url: RAYCAST_EXTENSION_URL },
     ];
     return apps.map(({ name, icon, url }) => ({
