@@ -6,8 +6,9 @@ export const DISCOVER_URL = `${WEB_APP_URL}/discover`;
 
 /**
  * Where Stripe returns the user after checkout. Static pages on inoh.app, not
- * `obsidian://` URIs: the stripe-subscribe edge function forwards these to
- * Stripe verbatim, and Stripe rejects unregistered custom schemes.
+ * `obsidian://` URIs: the stripe-subscribe edge function only accepts
+ * redirect URLs Inoh owns (see _shared/stripe-redirect-urls.ts in
+ * inoh-backend), and Stripe rejects unregistered custom schemes anyway.
  */
 export const CHECKOUT_SUCCESS_URL = `${WEB_APP_URL}/checkout-success`;
 export const CHECKOUT_CANCEL_URL = `${WEB_APP_URL}/checkout-cancel`;
