@@ -383,10 +383,14 @@ button.inoh-sense-option strong {
   color: var(--inoh-card-text);
 }
 
-/* Selection add-button: floating pill above a selected word. */
-button.inoh-add-word-button {
+/* Selection add-button: floating pill above a selected word. The doubled
+   class plus tooltip anchor outweighs theme button rules like
+   `.theme-dark button:not(.clickable-icon)`, which washed the brand
+   background out; `background` (not background-color) also clears any
+   theme button gradient. */
+.cm-tooltip > button.inoh-add-word-button.inoh-add-word-button {
   padding: 5px 12px;
-  background-color: var(--inoh-brand);
+  background: var(--inoh-brand);
   color: #fff;
   border: none;
   border-radius: 999px;
@@ -397,12 +401,12 @@ button.inoh-add-word-button {
   z-index: var(--layer-tooltip);
 }
 
-button.inoh-add-word-button:hover {
-  background-color: var(--inoh-brand-deep);
+.cm-tooltip > button.inoh-add-word-button.inoh-add-word-button:hover {
+  background: var(--inoh-brand-deep);
 }
 
 /* The pill carries all the chrome; strip CodeMirror's tooltip box. */
-.cm-tooltip:has(> button.inoh-add-word-button) {
+.cm-tooltip.cm-tooltip:has(> button.inoh-add-word-button) {
   background-color: transparent;
   border: none;
 }
