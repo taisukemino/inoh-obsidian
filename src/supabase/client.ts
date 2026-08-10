@@ -14,6 +14,10 @@ import { createAuthStorage } from "./auth-storage";
  * @returns Configured Supabase client
  */
 export function createSupabaseClient(app: App): SupabaseClient {
+  // Reason: the plugin has no generated database types, so the client keeps
+  // supabase-js's `any`-based default schema; queries type their rows at the
+  // call site instead (e.g. `maybeSingle<SubscriptionRow>()`).
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       storage: createAuthStorage(app),

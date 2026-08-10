@@ -100,7 +100,10 @@ export function getTokenCompatibility(typedToken: string, targetToken: string): 
     return { compatible: false, strong: false };
   }
 
-  const maxDistance = Math.max(getTokenDistanceLimit(left.length), getTokenDistanceLimit(right.length));
+  const maxDistance = Math.max(
+    getTokenDistanceLimit(left.length),
+    getTokenDistanceLimit(right.length),
+  );
   const isLevenshteinMatch = levenshtein.get(left, right) <= maxDistance;
   return { compatible: isLevenshteinMatch, strong: false };
 }

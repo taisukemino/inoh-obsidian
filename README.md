@@ -40,7 +40,9 @@ pnpm dev        # watch build into your vault, against the production backend
 pnpm dev:local  # same, but against a local Supabase stack (Stripe test mode)
 pnpm test       # vitest — matching engine
 pnpm typecheck  # tsc --noEmit
-pnpm build      # typecheck + minified production build to ./main.js
+pnpm lint       # eslint (type-checked rules); pnpm lint:fix to autofix
+pnpm format     # prettier --write src; pnpm format:check to verify only
+pnpm build      # typecheck + lint + minified production build to ./main.js
 ```
 
 Backend selection follows the Inoh app's `APP_ENV` convention: `.env.<APP_ENV>` is loaded on top of `.env`, and `APP_ENV` defaults to `prod`. **The production project runs live Stripe keys, so completing checkout against it charges a real card.** To exercise the upgrade flow safely, run `supabase start` in `inoh-backend`, put the URL and publishable key it prints into `.env.local`, and use `pnpm dev:local` — that stack runs Stripe test keys, so card `4242 4242 4242 4242` works. Every dev build prints which backend it targets. `pnpm build` ignores the env files entirely and always targets production, so a local URL can never ship.

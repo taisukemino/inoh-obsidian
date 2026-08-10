@@ -1,7 +1,24 @@
 import type { IntervalPrices, PlanPrice } from "./subscription-service";
 
 /** Currencies Stripe bills as whole units, so 100 means 100 yen, not 1.00. */
-const ZERO_DECIMAL_CURRENCIES = new Set(["bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga", "pyg", "rwf", "ugx", "vnd", "vuv", "xaf", "xof", "xpf"]);
+const ZERO_DECIMAL_CURRENCIES = new Set([
+  "bif",
+  "clp",
+  "djf",
+  "gnf",
+  "jpy",
+  "kmf",
+  "krw",
+  "mga",
+  "pyg",
+  "rwf",
+  "ugx",
+  "vnd",
+  "vuv",
+  "xaf",
+  "xof",
+  "xpf",
+]);
 
 const MONTHS_PER_YEAR = 12;
 

@@ -1,6 +1,6 @@
 import { setIcon } from "obsidian";
 import { WEB_APP_URL } from "../constants";
-import { AUDIO_BUCKET_URL } from "../supabase/config";
+import { AUDIO_BUCKET_URL } from "../supabase";
 import type { DeckCard } from "../types";
 
 export type DeckWordCardOptions = {

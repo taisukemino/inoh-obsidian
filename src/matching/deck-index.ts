@@ -98,11 +98,7 @@ export class DeckIndex {
     return candidates;
   }
 
-  private addKeys(
-    map: Map<string, IndexEntry[]>,
-    keys: Iterable<string>,
-    entry: IndexEntry,
-  ): void {
+  private addKeys(map: Map<string, IndexEntry[]>, keys: Iterable<string>, entry: IndexEntry): void {
     for (const key of keys) {
       const existing = map.get(key);
       if (existing) {

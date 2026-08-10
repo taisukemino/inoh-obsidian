@@ -1,7 +1,7 @@
 import { App, Modal, Notice, Platform, Setting } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { removeModalCloseButtons } from "../editor/remove-modal-close-buttons";
-import { openExternalUrl } from "../ui/open-external-url";
+import { removeModalCloseButtons } from "../editor";
+import { openExternalUrl } from "../ui";
 import { planButtonLabel, yearlySavingPercent } from "./price-format";
 import {
   ActiveSubscriptionError,

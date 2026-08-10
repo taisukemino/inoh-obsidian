@@ -1,6 +1,7 @@
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CHECKOUT_CANCEL_URL, CHECKOUT_SUCCESS_URL } from "../constants";
+import { invokeEdgeFunction } from "../supabase";
 
 /**
  * Thrown when the account already has a live Stripe subscription, so checkout
@@ -101,9 +102,10 @@ export const UNKNOWN_TIER_PRICES: TierPrices = {
  * @throws {Error} When the request fails
  */
 export async function fetchTierPrices(supabase: SupabaseClient): Promise<TierPrices> {
-  const { data, error } = await supabase.functions.invoke<Partial<TierPrices>>(
+  const { data, error } = await invokeEdgeFunction<Partial<TierPrices>>(
+    supabase,
     "subscription-prices",
-    { body: {} },
+    {},
   );
 
   if (error) {
@@ -134,17 +136,18 @@ export async function startCheckout(
   tier: PaidTier,
   interval: BillingInterval,
 ): Promise<string> {
-  const { data, error } = await supabase.functions.invoke<{ url?: string }>("stripe-subscribe", {
-    body: {
-      tier,
-      interval,
-      successUrl: CHECKOUT_SUCCESS_URL,
-      cancelUrl: CHECKOUT_CANCEL_URL,
-    },
+  const { data, error } = await invokeEdgeFunction<{ url?: string }>(supabase, "stripe-subscribe", {
+    tier,
+    interval,
+    successUrl: CHECKOUT_SUCCESS_URL,
+    cancelUrl: CHECKOUT_CANCEL_URL,
   });
 
   if (error) {
-    throw await toFriendlyError(error, "Could not start checkout. Check your connection and try again.");
+    throw await toFriendlyError(
+      error,
+      "Could not start checkout. Check your connection and try again.",
+    );
   }
   if (!data?.url) {
     throw new Error("Stripe did not return a checkout page. Try again in a moment.");
@@ -161,12 +164,17 @@ export async function startCheckout(
  * @throws {Error} When the request fails
  */
 export async function openBillingPortalUrl(supabase: SupabaseClient): Promise<string> {
-  const { data, error } = await supabase.functions.invoke<{ url?: string }>("manage-subscription", {
-    body: { returnUrl: CHECKOUT_SUCCESS_URL },
-  });
+  const { data, error } = await invokeEdgeFunction<{ url?: string }>(
+    supabase,
+    "manage-subscription",
+    { returnUrl: CHECKOUT_SUCCESS_URL },
+  );
 
   if (error) {
-    throw await toFriendlyError(error, "Could not open your billing settings. Try again in a moment.");
+    throw await toFriendlyError(
+      error,
+      "Could not open your billing settings. Try again in a moment.",
+    );
   }
   if (!data?.url) {
     throw new Error("Stripe did not return a billing page. Try again in a moment.");

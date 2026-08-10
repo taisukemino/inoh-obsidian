@@ -1,5 +1,6 @@
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { invokeEdgeFunction } from "../supabase";
 import type { DeckCard } from "../types";
 
 export type DeckWordSuggestion = {
@@ -54,14 +55,13 @@ export async function requestDeckWordSuggestions(
     definition: card.dictionary.definition,
   }));
 
-  const { data, error } = await supabase.functions.invoke<SuggestionResult>(
+  const { data, error } = await invokeEdgeFunction<SuggestionResult>(
+    supabase,
     "suggest-deck-words",
     {
-      body: {
-        paragraph: suggestionText,
-        deckWords,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
+      paragraph: suggestionText,
+      deckWords,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
   );
 

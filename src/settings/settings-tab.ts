@@ -2,15 +2,15 @@ import {
   App,
   Notice,
   PluginSettingTab,
-  setIcon,
   type SettingDefinition,
   type SettingDefinitionItem,
 } from "obsidian";
-import { CHROME_EXTENSION_URL, DISCOVER_URL, RAYCAST_EXTENSION_URL, WEB_APP_URL } from "../constants";
+import { DISCOVER_URL, WEB_APP_URL } from "../constants";
 import type InohPlugin from "../main";
-import { isPaidTier, TIER_DISPLAY_NAMES } from "../subscriptions/subscription-service";
-import { openExternalUrl } from "../ui/open-external-url";
-import { APP_ICON_IDS, registerAppIcons } from "./app-icons";
+import { isPaidTier, TIER_DISPLAY_NAMES } from "../subscriptions";
+import { openExternalUrl } from "../ui";
+import { registerAppIcons } from "./app-icons";
+import { appsDefinitions } from "./apps-definitions";
 import { AuthModal } from "./auth-modal";
 
 export class InohSettingsTab extends PluginSettingTab {
@@ -49,41 +49,9 @@ export class InohSettingsTab extends PluginSettingTab {
       {
         type: "group",
         heading: "Apps",
-        items: this.appsDefinitions(),
+        items: appsDefinitions(),
       },
     ];
-  }
-
-  /**
-   * Cross-promotion rows for the other Inoh ecosystem apps (this plugin
-   * excluded). The icon + name itself is the link — no separate button. Apps
-   * without a `url` are unreleased — the iOS App Store listing is mid-rebrand
-   * — so they get a muted non-clickable "Coming soon" label instead.
-   */
-  private appsDefinitions(): SettingDefinition[] {
-    const apps: { name: string; icon: string; url?: string }[] = [
-      { name: "iOS app", icon: APP_ICON_IDS.apple },
-      { name: "Web app", icon: "globe", url: WEB_APP_URL },
-      { name: "Chrome extension", icon: APP_ICON_IDS.chrome, url: CHROME_EXTENSION_URL },
-      { name: "Raycast extension", icon: APP_ICON_IDS.raycast, url: RAYCAST_EXTENSION_URL },
-    ];
-    return apps.map(({ name, icon, url }) => ({
-      name,
-      render: (setting) => {
-        const iconElement = setting.nameEl.createSpan({ cls: "inoh-app-icon" });
-        setIcon(iconElement, icon);
-        setting.nameEl.prepend(iconElement);
-        if (url) {
-          setting.nameEl.addClass("inoh-app-name-link");
-          setting.nameEl.setAttribute("role", "link");
-          setting.nameEl.addEventListener("click", () => {
-            openExternalUrl(url);
-          });
-        } else {
-          setting.controlEl.createSpan({ cls: "inoh-coming-soon", text: "Coming soon" });
-        }
-      },
-    }));
   }
 
   override getControlValue(key: string): unknown {
@@ -123,7 +91,7 @@ export class InohSettingsTab extends PluginSettingTab {
    */
   private async reloadAccountState(): Promise<void> {
     this.refresh();
-    await Promise.all([this.plugin.refreshDeck(), this.plugin.refreshAccountState()]);
+    await Promise.all([this.plugin.refreshDeck(), this.plugin.account.refresh()]);
     this.refresh();
   }
 
@@ -159,20 +127,20 @@ export class InohSettingsTab extends PluginSettingTab {
   }
 
   private signedInDefinition(): SettingDefinition {
-    const { currentUsername, currentUserEmail } = this.plugin;
+    const { account, currentUserEmail } = this.plugin;
     const cardCount = this.plugin.deckService.getCards().length;
     const fetchedAt = this.plugin.deckService.getFetchedAt();
 
     // Accounts are created by email OTP, so a display name is optional — fall
     // back to the email rather than showing a nameless row.
     const accountDetails = [
-      currentUsername ? currentUserEmail : null,
+      account.username ? currentUserEmail : null,
       `${cardCount} ${cardCount === 1 ? "word" : "words"}`,
       fetchedAt ? `synced ${new Date(fetchedAt).toLocaleString()}` : "not synced yet",
     ].filter(Boolean);
 
     return {
-      name: currentUsername ?? currentUserEmail ?? "Signed in",
+      name: account.username ?? currentUserEmail ?? "Signed in",
       desc: accountDetails.join(" · "),
       visible: () => !this.isSignedOut(),
       render: (setting) => {
@@ -197,7 +165,7 @@ export class InohSettingsTab extends PluginSettingTab {
   }
 
   private planDefinition(): SettingDefinition {
-    const { tier, hasLiveStripeSubscription } = this.plugin.subscription;
+    const { tier, hasLiveStripeSubscription } = this.plugin.account.subscription;
     // Mirrors the Inoh app: a live-but-unhealthy subscription (past_due) is not
     // entitled to a paid plan, but still needs the portal to fix its card.
     const canManageBilling = isPaidTier(tier) || hasLiveStripeSubscription;
@@ -207,10 +175,10 @@ export class InohSettingsTab extends PluginSettingTab {
       desc: this.planDescription(),
       visible: () => !this.isSignedOut(),
       render: (setting) => {
-        if (this.plugin.subscriptionCheckFailed) {
+        if (this.plugin.account.subscriptionCheckFailed) {
           setting.addButton((button) =>
             button.setButtonText("Retry").onClick(async () => {
-              await this.plugin.refreshAccountState();
+              await this.plugin.account.refresh();
               this.refresh();
             }),
           );
@@ -219,7 +187,7 @@ export class InohSettingsTab extends PluginSettingTab {
         if (canManageBilling) {
           setting.addButton((button) =>
             button.setButtonText("Manage").onClick(() => {
-              void this.plugin.openBillingPortal();
+              void this.plugin.account.openBillingPortal();
             }),
           );
           return;
@@ -229,7 +197,7 @@ export class InohSettingsTab extends PluginSettingTab {
             .setButtonText("Upgrade")
             .setCta()
             .onClick(() => {
-              this.plugin.promptUpgrade(null);
+              this.plugin.account.promptUpgrade(null);
             }),
         );
       },
@@ -242,8 +210,8 @@ export class InohSettingsTab extends PluginSettingTab {
    * actually hit.
    */
   private planDescription(): string {
-    const { tier, cancelAtPeriodEnd, currentPeriodEnd } = this.plugin.subscription;
-    if (this.plugin.subscriptionCheckFailed) {
+    const { tier, cancelAtPeriodEnd, currentPeriodEnd } = this.plugin.account.subscription;
+    if (this.plugin.account.subscriptionCheckFailed) {
       return "Could not check your plan. If you subscribed, this is not your real plan.";
     }
     if (!isPaidTier(tier)) {

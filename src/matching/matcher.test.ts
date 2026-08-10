@@ -39,10 +39,7 @@ describe("single words", () => {
     expect(matchWords(["cross"], "We crossed a few wires.")).toEqual(["crossed"]);
     expect(matchWords(["cross"], "Crossing the street.")).toEqual(["Crossing"]);
     expect(matchWords(["meeting"], "Two meetings today.")).toEqual(["meetings"]);
-    expect(matchWords(["carry"], "She carried it. He carries on.")).toEqual([
-      "carried",
-      "carries",
-    ]);
+    expect(matchWords(["carry"], "She carried it. He carries on.")).toEqual(["carried", "carries"]);
     expect(matchWords(["plan"], "We planned it while planning more.")).toEqual([
       "planned",
       "planning",
@@ -108,9 +105,7 @@ describe("tolerant mode", () => {
 describe("phrases and idioms", () => {
   it("matches a contiguous phrase with inflected tokens", () => {
     expect(matchWords(["give up"], "I almost gave up twice.")).toEqual(["gave up"]);
-    expect(matchWords(["hit the jackpot"], "They hit the jackpot!")).toEqual([
-      "hit the jackpot",
-    ]);
+    expect(matchWords(["hit the jackpot"], "They hit the jackpot!")).toEqual(["hit the jackpot"]);
   });
 
   it("matches phrases with inflection on any token", () => {
@@ -146,8 +141,9 @@ describe("phrases and idioms", () => {
   });
 
   it("matches person placeholders (someone → him/her/…)", () => {
-    expect(matchWords(["have someone by the short hairs"], "They have him by the short hairs."))
-      .toEqual(["have him by the short hairs"]);
+    expect(
+      matchWords(["have someone by the short hairs"], "They have him by the short hairs."),
+    ).toEqual(["have him by the short hairs"]);
   });
 
   it("requires every phrase token to match", () => {

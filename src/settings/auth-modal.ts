@@ -1,7 +1,7 @@
 import { App, Modal, Notice, Platform, Setting } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { removeModalCloseButtons } from "../editor/remove-modal-close-buttons";
-import { requestEmailCode, verifyEmailCode } from "../supabase/auth";
+import { removeModalCloseButtons } from "../editor";
+import { requestEmailCode, verifyEmailCode } from "../supabase";
 
 /**
  * Two-step email OTP sign-in: enter email → receive a six-digit code → verify.

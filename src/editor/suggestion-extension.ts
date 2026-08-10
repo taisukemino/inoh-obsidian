@@ -1,6 +1,6 @@
 import { StateEffect, StateField } from "@codemirror/state";
 import { Decoration, EditorView } from "@codemirror/view";
-import type { DeckWordSuggestion } from "../suggestions/suggestion-service";
+import type { DeckWordSuggestion } from "../suggestions";
 
 /** A suggestion anchored to a live document range. */
 export type ActiveSuggestion = {
@@ -88,4 +88,3 @@ export function resolveSuggestionRanges(
   }
   return resolved;
 }
-

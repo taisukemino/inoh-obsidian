@@ -8,7 +8,7 @@ import {
   type ViewUpdate,
 } from "@codemirror/view";
 import { HIGHLIGHT_REBUILD_DEBOUNCE_MS } from "../constants";
-import type { DeckMatcher } from "../matching/matcher";
+import type { DeckMatcher } from "../matching";
 import type { DeckMatch } from "../types";
 
 /**
