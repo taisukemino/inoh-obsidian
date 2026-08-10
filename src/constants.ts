@@ -20,7 +20,7 @@ export const CHECKOUT_CANCEL_URL = `${WEB_APP_URL}/checkout-cancel`;
  */
 export const CHROME_EXTENSION_URL =
   "https://chromewebstore.google.com/detail/fihdhfkhbocbgmnhdigkljknabnjeoai?utm_source=item-share-cb";
-export const RAYCAST_EXTENSION_URL = "https://www.raycast.com/tai/joey-vocab";
+export const RAYCAST_EXTENSION_URL = "https://www.raycast.com/tai/inoh";
 
 
 /** Delay after the last keystroke before rescanning the viewport for deck words. */
