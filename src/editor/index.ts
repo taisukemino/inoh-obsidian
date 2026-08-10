@@ -1,3 +1,4 @@
+export * from "./add-word-tooltip";
 export * from "./deck-word-card";
 export * from "./editor-view";
 export * from "./highlight-extension";

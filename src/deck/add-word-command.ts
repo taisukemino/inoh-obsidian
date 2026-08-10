@@ -1,6 +1,7 @@
 import { Notice, type App, type Editor } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { DictionaryLookupEntry } from "../types";
+import { generateLemmaCandidates } from "../matching";
+import type { DeckCard, DictionaryLookupEntry } from "../types";
 import type { DeckService } from "./deck-service";
 import { findDictionaryEntries } from "./dictionary-lookup";
 import { SensePickerModal } from "./sense-picker-modal";
@@ -18,13 +19,26 @@ export type AddWordHost = {
 };
 
 /** A single word or short phrase — something the dictionary could contain. */
-function isAddableWord(text: string): boolean {
+export function isAddableWord(text: string): boolean {
   return (
     text.length > 0 &&
     text.length <= MAX_WORD_LENGTH &&
     text.split(/\s+/).length <= MAX_WORD_TOKENS &&
     /[A-Za-z]/.test(text)
   );
+}
+
+/**
+ * Checks whether the deck already covers the selected text, including
+ * inflected selections ("flipped" when "flip" is a deck word). Used to hide
+ * the selection add-button for words the user is already learning.
+ *
+ * @param cards - The cached deck cards
+ * @param selectedText - Raw selection from the editor
+ */
+export function isWordInDeck(cards: DeckCard[], selectedText: string): boolean {
+  const candidates = new Set(generateLemmaCandidates(selectedText));
+  return cards.some((card) => candidates.has(card.dictionary.word.toLowerCase()));
 }
 
 /**
@@ -52,6 +66,18 @@ export async function addWordFromEditor(host: AddWordHost, editor: Editor): Prom
     new Notice("Select a word to add to your deck.");
     return;
   }
+  await addWordToDeck(host, selectedText);
+}
+
+/**
+ * Looks the text up in the dictionary and adds it to the deck — asking which
+ * sense when there are several. Shared by the command, the context menu, and
+ * the selection add-button.
+ *
+ * @param host - The plugin, providing the session and deck service
+ * @param selectedText - The word or short phrase to add
+ */
+export async function addWordToDeck(host: AddWordHost, selectedText: string): Promise<void> {
   if (!isAddableWord(selectedText)) {
     new Notice("Select a single word or a short phrase.");
     return;

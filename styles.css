@@ -382,3 +382,27 @@ button.inoh-sense-option:hover {
 button.inoh-sense-option strong {
   color: var(--inoh-card-text);
 }
+
+/* Selection add-button: floating pill above a selected word. */
+button.inoh-add-word-button {
+  padding: 5px 12px;
+  background-color: var(--inoh-brand);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(26, 24, 21, 0.18);
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  z-index: var(--layer-tooltip);
+}
+
+button.inoh-add-word-button:hover {
+  background-color: var(--inoh-brand-deep);
+}
+
+/* The pill carries all the chrome; strip CodeMirror's tooltip box. */
+.cm-tooltip:has(> button.inoh-add-word-button) {
+  background-color: transparent;
+  border: none;
+}

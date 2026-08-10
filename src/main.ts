@@ -1,7 +1,15 @@
 import { MarkdownView, Notice, Platform, Plugin } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { addWordFromEditor, DeckService, getAddableSelection } from "./deck";
 import {
+  addWordFromEditor,
+  addWordToDeck,
+  DeckService,
+  getAddableSelection,
+  isAddableWord,
+  isWordInDeck,
+} from "./deck";
+import {
+  buildAddWordTooltip,
   buildHighlightViewPlugin,
   buildHoverTooltip,
   buildSuggestionTooltip,
@@ -74,7 +82,21 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       // the modal at once.
       ...(Platform.isMobile
         ? [buildTapToOpenCards(this.app, highlighterPlugin, onRemoveCard)]
-        : [buildHoverTooltip(highlighterPlugin, onRemoveCard), buildSuggestionTooltip()]),
+        : [
+            buildHoverTooltip(highlighterPlugin, onRemoveCard),
+            buildSuggestionTooltip(),
+            // Selecting a word pops a "＋ Add to Inoh" button, like the Chrome
+            // extension's selection button. Desktop-only: mobile's native
+            // selection callout sits where this would, and long-press already
+            // offers the add item in the editor menu.
+            buildAddWordTooltip({
+              shouldOfferWord: (selectedText) =>
+                this.currentUserEmail !== null &&
+                isAddableWord(selectedText) &&
+                !isWordInDeck(this.deckService.getCards(), selectedText),
+              onAddWord: (selectedText) => void addWordToDeck(this, selectedText),
+            }),
+          ]),
     ]);
 
     this.settingsTab = new InohSettingsTab(this.app, this);
@@ -100,22 +122,25 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       editorCallback: (editor) => void addWordFromEditor(this, editor),
     });
 
-    // Right-click on desktop, long-press on mobile — the same entry point the
-    // Chrome extension offers through its context menu.
-    this.registerEvent(
-      this.app.workspace.on("editor-menu", (menu, editor) => {
-        const selectedWord = getAddableSelection(editor);
-        if (!selectedWord) {
-          return;
-        }
-        menu.addItem((item) =>
-          item
-            .setTitle(`Add "${selectedWord}" to Inoh deck`)
-            .setIcon("plus")
-            .onClick(() => void addWordFromEditor(this, editor)),
-        );
-      }),
-    );
+    // Long-press menu item, mobile only: there the native selection callout
+    // occupies the spot where the selection add-button would float. Desktop
+    // gets that button instead, so its right-click menu stays clean.
+    if (Platform.isMobile) {
+      this.registerEvent(
+        this.app.workspace.on("editor-menu", (menu, editor) => {
+          const selectedWord = getAddableSelection(editor);
+          if (!selectedWord) {
+            return;
+          }
+          menu.addItem((item) =>
+            item
+              .setTitle(`Add "${selectedWord}" to Inoh deck`)
+              .setIcon("plus")
+              .onClick(() => void addWordFromEditor(this, editor)),
+          );
+        }),
+      );
+    }
 
     this.addCommand({
       id: "toggle-highlighting",
