@@ -399,10 +399,18 @@ button.inoh-sense-option strong {
   font-weight: var(--font-semibold);
   cursor: pointer;
   z-index: var(--layer-tooltip);
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
+/* Brand and brand-deep are near-identical reds, so the color shift alone
+   reads as no hover feedback — the lift and shadow carry it. */
 .cm-tooltip > button.inoh-add-word-button.inoh-add-word-button:hover {
   background: var(--inoh-brand-deep);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(26, 24, 21, 0.28);
 }
 
 /* The pill carries all the chrome; strip CodeMirror's tooltip box. */
