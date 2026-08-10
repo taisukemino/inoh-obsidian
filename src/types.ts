@@ -32,6 +32,15 @@ export type DeckCard = {
 export type Deck = {
   id: string;
   name: string;
+  /** Missing in deck caches persisted before the add-word feature. */
+  is_default?: boolean;
+};
+
+/** One dictionary hit for selected text — enough to pick a sense and add it. */
+export type DictionaryLookupEntry = {
+  id: string;
+  word: string;
+  definition: string;
 };
 
 /** A deck word located in editor text, in absolute document offsets. */

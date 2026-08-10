@@ -1,6 +1,6 @@
 import { MarkdownView, Notice, Platform, Plugin } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { DeckService } from "./deck";
+import { addWordFromEditor, DeckService, getAddableSelection } from "./deck";
 import {
   buildHighlightViewPlugin,
   buildHoverTooltip,
@@ -91,6 +91,31 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
     //     : "Suggest deck words for selection or note",
     //   callback: () => void suggestForSelectionOrNote(this),
     // });
+
+    this.addCommand({
+      id: "add-word-to-deck",
+      // No selection (the palette drops it on mobile) falls back to the word
+      // under the cursor, so the same command works on both platforms.
+      name: "Add selected word to deck",
+      editorCallback: (editor) => void addWordFromEditor(this, editor),
+    });
+
+    // Right-click on desktop, long-press on mobile — the same entry point the
+    // Chrome extension offers through its context menu.
+    this.registerEvent(
+      this.app.workspace.on("editor-menu", (menu, editor) => {
+        const selectedWord = getAddableSelection(editor);
+        if (!selectedWord) {
+          return;
+        }
+        menu.addItem((item) =>
+          item
+            .setTitle(`Add "${selectedWord}" to Inoh deck`)
+            .setIcon("plus")
+            .onClick(() => void addWordFromEditor(this, editor)),
+        );
+      }),
+    );
 
     this.addCommand({
       id: "toggle-highlighting",

@@ -354,3 +354,31 @@ button.inoh-modal-link:hover {
   color: var(--text-muted);
   font-size: var(--font-ui-small);
 }
+
+/* Sense picker: one button per dictionary sense of the selected word. */
+.inoh-sense-picker-hint {
+  margin-top: 0;
+  color: var(--inoh-card-text-secondary);
+}
+
+button.inoh-sense-option {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  text-align: left;
+  white-space: normal;
+  height: auto;
+  background-color: var(--inoh-card-button-bg);
+  color: var(--inoh-card-text);
+  border: 1px solid var(--inoh-card-border);
+  border-radius: 8px;
+}
+
+button.inoh-sense-option:hover {
+  border-color: var(--inoh-brand);
+}
+
+button.inoh-sense-option strong {
+  color: var(--inoh-card-text);
+}

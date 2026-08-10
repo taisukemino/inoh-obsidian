@@ -2,6 +2,18 @@ import { Events } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Deck, DeckCache, DeckCard } from "../types";
 
+const POSTGRESQL_UNIQUE_VIOLATION = "23505";
+
+/** user_cards has UNIQUE (user_id, dictionary_id) — a violation means "already added". */
+function isDuplicateCardError(error: { code?: string; message?: string }): boolean {
+  const message = error.message?.toLowerCase() ?? "";
+  return (
+    error.code === POSTGRESQL_UNIQUE_VIOLATION ||
+    message.includes("duplicate") ||
+    message.includes("unique")
+  );
+}
+
 const DECK_CARD_SELECT = `
   id,
   deck_id,
@@ -78,7 +90,7 @@ export class DeckService extends Events {
           .order("created_at", { ascending: false }),
         this.supabase
           .from("decks")
-          .select("id, name")
+          .select("id, name, is_default")
           .eq("user_id", session.user.id)
           .order("created_at"),
       ]);
@@ -100,6 +112,50 @@ export class DeckService extends Events {
       this.isRefreshing = false;
       this.trigger("deck-changed");
     }
+  }
+
+  /**
+   * Adds a dictionary entry to the user's default deck, then refetches the
+   * whole deck so the new card (with its joined dictionary row) reaches the
+   * cache and highlights without hand-building the row client-side.
+   *
+   * @param dictionaryId - The dictionary row to add
+   * @throws {Error} When signed out, the word is already in the deck, or the insert fails
+   */
+  async addCard(dictionaryId: string): Promise<void> {
+    const {
+      data: { session },
+    } = await this.supabase.auth.getSession();
+    if (!session) {
+      throw new Error("Sign in to edit your deck.");
+    }
+
+    // A pre-add-word cache has no is_default flag; refetch instead of
+    // guessing which deck is the default.
+    if (this.decks.length === 0 || this.decks.every((deck) => deck.is_default === undefined)) {
+      await this.refresh();
+    }
+    const defaultDeck = this.decks.find((deck) => deck.is_default) ?? this.decks[0];
+    if (!defaultDeck) {
+      throw new Error("No deck found for this account.");
+    }
+
+    // DB defaults fill the FSRS columns (card_state "new", stability and
+    // difficulty 0) — the same 3-column insert the backend's
+    // approve_card_request RPC uses.
+    const { error } = await this.supabase.from("user_cards").insert({
+      user_id: session.user.id,
+      dictionary_id: dictionaryId,
+      deck_id: defaultDeck.id,
+    });
+    if (error) {
+      if (isDuplicateCardError(error)) {
+        throw new Error("This word is already in your deck.");
+      }
+      throw new Error(`Failed to add the word: ${error.message}`);
+    }
+
+    await this.refresh();
   }
 
   /**

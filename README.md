@@ -13,6 +13,7 @@ Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you wr
 - **Hover — or tap — to review.** … On mobile, where hover doesn't exist, tapping a highlighted word or suggested phrase opens the same card in a dialog.
 - **AI suggestions.** Run **Suggest deck words for selection or note** — it works on the selected passage, or the entire note when nothing is selected. On mobile the selection is lost when the command palette opens, so there the command is named **Suggest deck words for entire note** and always covers the whole note. Phrases that could be rewritten with one of your deck words get a wavy underline; hover one to see the deck word, its definition, the rewrite, and a one-sentence explanation of why it fits — then Apply or Dismiss. Free accounts get a limited number of suggestion requests per day; Inoh Pro is unlimited — you can upgrade from the plugin settings without leaving Obsidian.
 -->
+- **Add words without leaving Obsidian.** Select a word (or phrase) and pick **Add "word" to Inoh deck** from the right-click menu — long-press on mobile — or run the **Add selected word to deck** command, which also works on the word under the cursor. Inflected forms find their entry (*flipped* adds *flip*), and if the word has several meanings you pick the right one from a list.
 - **Works offline.** Your deck is cached locally, so highlighting keeps working without a connection.
 
 ## Getting started
@@ -28,7 +29,7 @@ Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you wr
 <!-- Suggestions are disabled until their quality improves. Original disclosure:
 - When you run the suggestion command, your selected text (up to 2,000 characters) and your deck words are sent to Inoh's backend, which uses OpenAI to generate suggestions. Nothing else from your vault is ever uploaded.
 -->
-- Nothing from your vault is ever uploaded.
+- When you add a word to your deck, that word is sent to Inoh's backend to look it up in the dictionary. Nothing else from your vault is ever uploaded.
 - If you choose to upgrade, the plugin asks Inoh's backend for a Stripe Checkout link and opens it in your browser. Payment details go to Stripe and are never seen by the plugin; it only reads back whether your account is on the Free, Plus, or Pro plan.
 - Auth tokens are stored in device-local storage, never in vault files, so they are not carried along by vault sync services.
 
@@ -53,7 +54,7 @@ Backend selection follows the Inoh app's `APP_ENV` convention: `.env.<APP_ENV>` 
 src/
 ├── main.ts                  # plugin wiring
 ├── supabase/                # backend URL/key (per APP_ENV), client factory, email-OTP auth
-├── deck/deck-service.ts     # fetch + cache + deck-changed events
+├── deck/                    # fetch + cache + deck-changed events, add-word flow (lookup, sense picker)
 ├── matching/                # deck index + token-driven matcher (pure TS, unit-tested)
 ├── editor/                  # CM6 extensions: highlight decorations, hover tooltip, inline suggestions
 ├── suggestions/             # suggest-deck-words edge function client
