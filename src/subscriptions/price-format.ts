@@ -1,4 +1,4 @@
-import type { PlanPrice, ProPrices } from "./subscription-service";
+import type { IntervalPrices, PlanPrice } from "./subscription-service";
 
 /** Currencies Stripe bills as whole units, so 100 means 100 yen, not 1.00. */
 const ZERO_DECIMAL_CURRENCIES = new Set(["bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga", "pyg", "rwf", "ugx", "vnd", "vuv", "xaf", "xof", "xpf"]);
@@ -25,10 +25,10 @@ export function formatPrice(price: PlanPrice): string {
 /**
  * Whole-percent saving from paying yearly instead of twelve monthly charges.
  *
- * @param prices - Live prices for both intervals
+ * @param prices - One tier's live prices for both intervals
  * @returns The saving, or null when it cannot be computed or isn't a saving
  */
-export function yearlySavingPercent(prices: ProPrices): number | null {
+export function yearlySavingPercent(prices: IntervalPrices): number | null {
   const { month, year } = prices;
   if (!month || !year || month.currency !== year.currency) {
     return null;

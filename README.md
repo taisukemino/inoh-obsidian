@@ -29,7 +29,7 @@ Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you wr
 - When you run the suggestion command, your selected text (up to 2,000 characters) and your deck words are sent to Inoh's backend, which uses OpenAI to generate suggestions. Nothing else from your vault is ever uploaded.
 -->
 - Nothing from your vault is ever uploaded.
-- If you choose to upgrade, the plugin asks Inoh's backend for a Stripe Checkout link and opens it in your browser. Payment details go to Stripe and are never seen by the plugin; it only reads back whether your account is on the free or Pro plan.
+- If you choose to upgrade, the plugin asks Inoh's backend for a Stripe Checkout link and opens it in your browser. Payment details go to Stripe and are never seen by the plugin; it only reads back whether your account is on the Free, Plus, or Pro plan.
 - Auth tokens are stored in device-local storage, never in vault files, so they are not carried along by vault sync services.
 
 ## Development

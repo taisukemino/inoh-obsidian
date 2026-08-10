@@ -25,8 +25,10 @@ import {
 } from "./suggestions/suggestion-service";
 import {
   fetchSubscriptionState,
+  isPaidTier,
   openBillingPortalUrl,
   FREE_SUBSCRIPTION,
+  TIER_DISPLAY_NAMES,
   type SubscriptionState,
 } from "./subscriptions/subscription-service";
 import { UpgradeModal } from "./subscriptions/upgrade-modal";
@@ -308,8 +310,8 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
   }
 
   /**
-   * Opens Stripe Checkout for Inoh Pro. Called from the daily-limit path and
-   * from the settings tab.
+   * Opens the upgrade modal offering Inoh Plus and Pro. Called from the
+   * settings tab's Upgrade button.
    *
    * @param reason - The server's explanation of why the upgrade is offered,
    *   or null when the user opened this themselves from settings
@@ -322,8 +324,8 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
 
   /**
    * Re-reads the plan after the user comes back from Stripe. The webhook that
-   * flips the account to Pro can land after they switch back, so this stays
-   * armed and retries on the next focus until it sees Pro.
+   * flips the account onto a paid plan can land after they switch back, so
+   * this stays armed and retries on the next focus until the plan shows up.
    */
   private async pickUpStripeReturn(): Promise<void> {
     const pendingFlow = this.pendingStripeReturn;
@@ -331,7 +333,7 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
       return;
     }
     try {
-      const wasPro = this.subscription.isPro;
+      const wasPaid = isPaidTier(this.subscription.tier);
       this.subscription = await fetchSubscriptionState(this.supabase, this.currentUserId);
       // The user is often still looking at the settings tab they launched the
       // Stripe flow from, so repaint it with whatever the read found —
@@ -345,10 +347,10 @@ export default class InohPlugin extends Plugin implements MatcherProvider {
         return;
       }
       // Checkout's webhook can land after the user switches back, so stay armed
-      // and retry on each focus until Pro actually shows up.
-      if (!wasPro && this.subscription.isPro) {
+      // and retry on each focus until the paid plan actually shows up.
+      if (!wasPaid && isPaidTier(this.subscription.tier)) {
         this.pendingStripeReturn = null;
-        new Notice("You're on Inoh Pro — suggestions are unlimited.");
+        new Notice(`You're on Inoh ${TIER_DISPLAY_NAMES[this.subscription.tier]} — thanks for subscribing!`);
       }
     } catch (error) {
       console.error("Inoh: could not re-read the subscription after Stripe", error);

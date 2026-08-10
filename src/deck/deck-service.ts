@@ -25,9 +25,8 @@ const DECK_CARD_SELECT = `
  * Holds the user's deck in memory and keeps a copy in plugin data so
  * highlighting works instantly on startup and offline.
  *
- * The free tier caps decks at 300 cards and `user_cards` has no updated_at
- * cursor, so "sync" is always a full refetch. Emits `"deck-changed"` after
- * every successful refresh or cache load.
+ * `user_cards` has no updated_at cursor, so "sync" is always a full refetch.
+ * Emits `"deck-changed"` after every successful refresh or cache load.
  */
 export class DeckService extends Events {
   private cards: DeckCard[] = [];

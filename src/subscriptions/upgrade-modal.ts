@@ -5,26 +5,40 @@ import { openExternalUrl } from "../ui/open-external-url";
 import { planButtonLabel, yearlySavingPercent } from "./price-format";
 import {
   ActiveSubscriptionError,
-  fetchProPrices,
+  fetchTierPrices,
   openBillingPortalUrl,
-  startProCheckout,
+  startCheckout,
+  TIER_DISPLAY_NAMES,
+  UNKNOWN_TIER_PRICES,
   type BillingInterval,
-  type ProPrices,
+  type PaidTier,
+  type TierPrices,
 } from "./subscription-service";
 
 /**
- * Sends the user straight to Stripe Checkout for Inoh Pro — no web app in
- * between. Opened when the free daily suggestion cap is hit, and from the
- * plugin settings.
+ * What each paid tier buys, from the PRI-20152 pricing spec. The quotas are
+ * enforced server-side; these strings only pitch them.
+ */
+const TIER_PITCHES: Record<PaidTier, string> = {
+  plus: "Unlimited daily reviews + 30 pronunciation practices/day.",
+  pro: "Everything in Plus + 300 pronunciation practices/day.",
+};
+
+/** Plus is the target middle tier, so its row carries the call-to-action styling. */
+const HIGHLIGHTED_TIER: PaidTier = "plus";
+
+/**
+ * Sends the user straight to Stripe Checkout for a paid Inoh tier — no web app
+ * in between. Opened from the plugin settings.
  *
- * Offers both billing intervals, labelled with prices read live from Stripe so
- * they cannot drift from what the user is actually charged. Nothing is
- * hardcoded: the daily limit comes from the server's own message, and if the
- * price lookup fails the buttons stay usable, just unlabelled.
+ * Offers Plus and Pro on both billing intervals, labelled with prices read
+ * live from Stripe so they cannot drift from what the user is actually
+ * charged. Nothing is hardcoded: if the price lookup fails the buttons stay
+ * usable, just unlabelled.
  */
 export class UpgradeModal extends Modal {
   private isBusy = false;
-  private prices: ProPrices = { month: null, year: null };
+  private prices: TierPrices = UNKNOWN_TIER_PRICES;
 
   /**
    * @param reason - The server's explanation of why the upgrade is being
@@ -57,65 +71,66 @@ export class UpgradeModal extends Modal {
    */
   private async loadPrices(): Promise<void> {
     try {
-      this.prices = await fetchProPrices(this.supabase);
+      this.prices = await fetchTierPrices(this.supabase);
       this.render();
     } catch (error) {
-      console.error("Inoh: could not load Pro prices", error);
+      console.error("Inoh: could not load subscription prices", error);
     }
   }
 
   private render(): void {
     this.contentEl.empty();
-    this.setTitle("Upgrade to Inoh Pro");
+    this.setTitle("Upgrade your Inoh plan");
 
     if (this.reason) {
       this.contentEl.createEl("p", { text: this.reason });
     }
-    // Suggestions are disabled until their quality improves — this modal is
-    // currently unreachable (the suggest command and the Upgrade button are
-    // both commented out), but keep its pitch suggestion-free regardless.
-    // this.contentEl.createEl("p", {
-    //   text:
-    //     "Inoh Pro removes the daily suggestion cap and raises the deck size used " +
-    //     "for suggestions, so more of the words you're learning are in play.",
-    // });
     this.contentEl.createEl("p", {
       text: "Checkout opens in your browser. Come back here when you're done and your plan updates automatically.",
     });
 
-    const savingPercent = yearlySavingPercent(this.prices);
-
-    new Setting(this.contentEl)
-      .setName("Choose a billing interval")
-      .setDesc("Stripe confirms the exact amount before you pay.")
-      .addButton((button) =>
-        button
-          .setButtonText(planButtonLabel("Yearly", this.prices.year, savingPercent))
-          .setCta()
-          .onClick(() => void this.openCheckout("year")),
-      )
-      .addButton((button) =>
-        button
-          .setButtonText(planButtonLabel("Monthly", this.prices.month))
-          .onClick(() => void this.openCheckout("month")),
-      );
+    this.renderTierOffer("plus");
+    this.renderTierOffer("pro");
 
     new Setting(this.contentEl).addButton((button) =>
       button.setButtonText("Not now").onClick(() => this.close()),
     );
   }
 
+  /** One tier's row: its pitch plus a checkout button per billing interval. */
+  private renderTierOffer(tier: PaidTier): void {
+    const tierPrices = this.prices[tier];
+    const savingPercent = yearlySavingPercent(tierPrices);
+
+    new Setting(this.contentEl)
+      .setName(`Inoh ${TIER_DISPLAY_NAMES[tier]}`)
+      .setDesc(TIER_PITCHES[tier])
+      .addButton((button) => {
+        button
+          .setButtonText(planButtonLabel("Yearly", tierPrices.year, savingPercent))
+          .onClick(() => void this.openCheckout(tier, "year"));
+        if (tier === HIGHLIGHTED_TIER) {
+          button.setCta();
+        }
+      })
+      .addButton((button) =>
+        button
+          .setButtonText(planButtonLabel("Monthly", tierPrices.month))
+          .onClick(() => void this.openCheckout(tier, "month")),
+      );
+  }
+
   override onClose(): void {
     this.contentEl.empty();
   }
 
-  private async openCheckout(plan: BillingInterval): Promise<void> {
+  private async openCheckout(tier: PaidTier, interval: BillingInterval): Promise<void> {
     if (this.isBusy) {
       return;
     }
     this.isBusy = true;
     try {
-      openExternalUrl(await startProCheckout(this.supabase, plan));
+      openExternalUrl(await startCheckout(this.supabase, tier, interval));
       this.close();
       this.onCheckoutOpened();
     } catch (error) {

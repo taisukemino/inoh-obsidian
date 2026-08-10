@@ -8,6 +8,7 @@ import {
 } from "obsidian";
 import { CHROME_EXTENSION_URL, DISCOVER_URL, RAYCAST_EXTENSION_URL, WEB_APP_URL } from "../constants";
 import type InohPlugin from "../main";
+import { isPaidTier, TIER_DISPLAY_NAMES } from "../subscriptions/subscription-service";
 import { openExternalUrl } from "../ui/open-external-url";
 import { APP_ICON_IDS, registerAppIcons } from "./app-icons";
 import { AuthModal } from "./auth-modal";
@@ -196,13 +197,13 @@ export class InohSettingsTab extends PluginSettingTab {
   }
 
   private planDefinition(): SettingDefinition {
-    const { isPro, hasLiveStripeSubscription } = this.plugin.subscription;
+    const { tier, hasLiveStripeSubscription } = this.plugin.subscription;
     // Mirrors the Inoh app: a live-but-unhealthy subscription (past_due) is not
-    // entitled to Pro, but still needs the portal to fix its card.
-    const canManageBilling = isPro || hasLiveStripeSubscription;
+    // entitled to a paid plan, but still needs the portal to fix its card.
+    const canManageBilling = isPaidTier(tier) || hasLiveStripeSubscription;
 
     return {
-      name: isPro ? "Inoh Pro" : "Free plan",
+      name: isPaidTier(tier) ? `Inoh ${TIER_DISPLAY_NAMES[tier]}` : "Free plan",
       desc: this.planDescription(),
       visible: () => !this.isSignedOut(),
       render: (setting) => {
@@ -223,41 +224,35 @@ export class InohSettingsTab extends PluginSettingTab {
           );
           return;
         }
-        // Suggestions are disabled until their quality improves, and Pro's
-        // pitch is entirely about them — uncomment to bring the upsell back.
-        // setting.addButton((button) =>
-        //   button
-        //     .setButtonText("Upgrade to Pro")
-        //     .setCta()
-        //     .onClick(() => {
-        //       this.plugin.promptUpgrade(null);
-        //     }),
-        // );
+        setting.addButton((button) =>
+          button
+            .setButtonText("Upgrade")
+            .setCta()
+            .onClick(() => {
+              this.plugin.promptUpgrade(null);
+            }),
+        );
       },
     };
   }
 
   /**
-   * The daily cap is set server-side, so no number is quoted — the limit
-   * message names it when you actually hit it.
+   * Quotas and prices are owned server-side, so no number is quoted here —
+   * the upgrade modal reads live prices and the apps name a limit when it is
+   * actually hit.
    */
   private planDescription(): string {
-    const { isPro, cancelAtPeriodEnd, currentPeriodEnd } = this.plugin.subscription;
+    const { tier, cancelAtPeriodEnd, currentPeriodEnd } = this.plugin.subscription;
     if (this.plugin.subscriptionCheckFailed) {
       return "Could not check your plan. If you subscribed, this is not your real plan.";
     }
-    // Suggestions are disabled until their quality improves, so the plan copy
-    // must not mention them — restore the commented strings when they return.
-    if (!isPro) {
-      // return "A limited number of suggestion requests a day.";
+    if (!isPaidTier(tier)) {
       return "";
     }
     if (cancelAtPeriodEnd && currentPeriodEnd) {
       const lapseDate = new Date(currentPeriodEnd).toLocaleDateString();
-      // return `Unlimited suggestions. Cancels on ${lapseDate} — you keep Pro until then.`;
-      return `Cancels on ${lapseDate} — you keep Pro until then.`;
+      return `Cancels on ${lapseDate} — you keep ${TIER_DISPLAY_NAMES[tier]} until then.`;
     }
-    // return "Unlimited suggestions.";
     return "";
   }
 

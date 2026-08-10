@@ -18,27 +18,53 @@ type SubscriptionRow = {
   current_period_end: string | null;
 };
 
+/** The plan slugs stored in `subscriptions.plan`. */
+export type SubscriptionTier = "free" | "plus" | "pro";
+
+/** The tiers that can be bought through Stripe Checkout. */
+export type PaidTier = "plus" | "pro";
+
+/** Human name for each tier — the "Plus" in "Inoh Plus". */
+export const TIER_DISPLAY_NAMES: Record<SubscriptionTier, string> = {
+  free: "Free",
+  plus: "Plus",
+  pro: "Pro",
+};
+
+/**
+ * Whether a tier is entitled to paid features.
+ *
+ * @param tier - The tier the user is on right now
+ * @returns True for Plus and Pro
+ */
+export function isPaidTier(tier: SubscriptionTier): boolean {
+  return tier !== "free";
+}
+
 export type SubscriptionState = {
-  /** Entitled to Pro features right now. */
-  isPro: boolean;
+  /** The tier the user is entitled to right now; "free" when a paid plan lapsed. */
+  tier: SubscriptionTier;
   /**
    * A Stripe subscription exists that can still bill or recover — including
    * `past_due`, where the user is not entitled but does need the billing portal
    * to fix their card. Mirrors `hasLiveStripeSubscription` in the Inoh app.
    */
   hasLiveStripeSubscription: boolean;
-  /** True when Pro is winding down at the end of the paid period. */
+  /** True when the paid plan is winding down at the end of the paid period. */
   cancelAtPeriodEnd: boolean;
-  /** ISO timestamp Pro lapses on, when it is winding down. */
+  /** ISO timestamp the paid plan lapses on, when it is winding down. */
   currentPeriodEnd: string | null;
 };
 
 export const FREE_SUBSCRIPTION: SubscriptionState = {
-  isPro: false,
+  tier: "free",
   hasLiveStripeSubscription: false,
   cancelAtPeriodEnd: false,
   currentPeriodEnd: null,
 };
+
+/** Statuses where a paid plan is entitled — the backend's predicate, verbatim. */
+const ENTITLED_STATUSES = new Set(["active", "trialing"]);
 
 /** Statuses where Stripe still has a subscription that can bill or recover. */
 const LIVE_STRIPE_STATUSES = new Set(["active", "trialing", "past_due"]);
@@ -47,55 +73,71 @@ const LIVE_STRIPE_STATUSES = new Set(["active", "trialing", "past_due"]);
 export type BillingInterval = "month" | "year";
 
 export type PlanPrice = {
-  /** Smallest currency unit, e.g. 799 for $7.99. */
+  /** Smallest currency unit, e.g. 499 for $4.99. */
   unitAmount: number;
   /** ISO 4217, lowercased (e.g. "usd"). */
   currency: string;
 };
 
-/** Live prices per interval. Either may be null if Stripe has none configured. */
-export type ProPrices = Record<BillingInterval, PlanPrice | null>;
+/** One tier's live prices per interval. Either may be null if Stripe has none configured. */
+export type IntervalPrices = Record<BillingInterval, PlanPrice | null>;
+
+/** Live prices for both paid tiers, the shape subscription-prices returns. */
+export type TierPrices = Record<PaidTier, IntervalPrices>;
+
+/** What the upgrade modal shows until the live prices arrive from Stripe. */
+export const UNKNOWN_TIER_PRICES: TierPrices = {
+  plus: { month: null, year: null },
+  pro: { month: null, year: null },
+};
 
 /**
- * Reads the live Inoh Pro prices from Stripe via the subscription-prices
- * function, so the upgrade modal can show real numbers rather than a hardcoded
- * price that goes stale the moment pricing changes.
+ * Reads the live Inoh Plus and Pro prices from Stripe via the
+ * subscription-prices function, so the upgrade modal can show real numbers
+ * rather than a hardcoded price that goes stale the moment pricing changes.
  *
  * @param supabase - Signed-in Supabase client
- * @returns The price per interval
+ * @returns The price per tier and interval
  * @throws {Error} When the request fails
  */
-export async function fetchProPrices(supabase: SupabaseClient): Promise<ProPrices> {
-  const { data, error } = await supabase.functions.invoke<ProPrices>("subscription-prices", {
-    body: {},
-  });
+export async function fetchTierPrices(supabase: SupabaseClient): Promise<TierPrices> {
+  const { data, error } = await supabase.functions.invoke<Partial<TierPrices>>(
+    "subscription-prices",
+    { body: {} },
+  );
 
   if (error) {
     throw await toFriendlyError(error, "Could not load prices.");
   }
-  return { month: data?.month ?? null, year: data?.year ?? null };
+  return {
+    plus: { month: data?.plus?.month ?? null, year: data?.plus?.year ?? null },
+    pro: { month: data?.pro?.month ?? null, year: data?.pro?.year ?? null },
+  };
 }
 
 /**
- * Asks stripe-subscribe for a hosted Stripe Checkout URL for Inoh Pro.
+ * Asks stripe-subscribe for a hosted Stripe Checkout URL for a paid Inoh tier.
  *
- * Sends the interval rather than a Stripe price ID so pricing can change
- * without a plugin release — the edge function resolves the ID from its own
- * secrets.
+ * Sends the tier and interval rather than a Stripe price ID so pricing can
+ * change without a plugin release — the edge function resolves the ID from its
+ * own secrets.
  *
  * @param supabase - Signed-in Supabase client
- * @param plan - Billing interval to subscribe on
+ * @param tier - Paid tier to subscribe to
+ * @param interval - Billing interval to subscribe on
  * @returns The hosted Stripe Checkout URL to open in a browser
  * @throws {ActiveSubscriptionError} When the account already subscribes
  * @throws {Error} When the request fails for any other reason
  */
-export async function startProCheckout(
+export async function startCheckout(
   supabase: SupabaseClient,
-  plan: BillingInterval,
+  tier: PaidTier,
+  interval: BillingInterval,
 ): Promise<string> {
   const { data, error } = await supabase.functions.invoke<{ url?: string }>("stripe-subscribe", {
     body: {
-      plan,
+      tier,
+      interval,
       successUrl: CHECKOUT_SUCCESS_URL,
       cancelUrl: CHECKOUT_CANCEL_URL,
     },
@@ -135,11 +177,10 @@ export async function openBillingPortalUrl(supabase: SupabaseClient): Promise<st
 /**
  * Reads the signed-in user's subscription state.
  *
- * `plan = 'pro' AND status = 'active'` is the entitlement predicate used across
- * Inoh — the web app, the suggest-deck-words edge function, and the free card
- * limit trigger all test it. Every account has a `subscriptions` row seeded at
- * signup, so `status` alone means nothing. RLS restricts the read to the
- * caller's own row.
+ * A paid plan (`plus` or `pro`) is entitled while its status is `active` or
+ * `trialing` — the same predicate the backend uses everywhere. Every account
+ * has a `subscriptions` row seeded at signup, so `status` alone means nothing.
+ * RLS restricts the read to the caller's own row.
  *
  * @param supabase - Signed-in Supabase client
  * @param userId - The signed-in user's id
@@ -162,8 +203,10 @@ export async function fetchSubscriptionState(
   if (!data) {
     return FREE_SUBSCRIPTION;
   }
+  const isEntitledPaidPlan =
+    (data.plan === "plus" || data.plan === "pro") && ENTITLED_STATUSES.has(data.status);
   return {
-    isPro: data.plan === "pro" && data.status === "active",
+    tier: isEntitledPaidPlan ? (data.plan as PaidTier) : "free",
     hasLiveStripeSubscription:
       Boolean(data.stripe_subscription_id) && LIVE_STRIPE_STATUSES.has(data.status),
     cancelAtPeriodEnd: data.cancel_at_period_end === true,
@@ -181,7 +224,7 @@ async function toFriendlyError(error: unknown, fallbackMessage: string): Promise
       const body = (await response.json()) as SubscriptionErrorBody;
       if (body.code === "subscription_exists") {
         return new ActiveSubscriptionError(
-          body.error ?? "This account already has an Inoh Pro subscription.",
+          body.error ?? "This account already has an Inoh subscription.",
         );
       }
       if (body.error) {
