@@ -1,8 +1,9 @@
 import { Notice, type App, type Editor } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateLemmaCandidates } from "../matching";
+import type { AccountService } from "../subscriptions";
 import type { DeckCard, DictionaryLookupEntry } from "../types";
-import type { DeckService } from "./deck-service";
+import { CardLimitError, type DeckService } from "./deck-service";
 import { findDictionaryEntries } from "./dictionary-lookup";
 import { SensePickerModal } from "./sense-picker-modal";
 
@@ -16,6 +17,7 @@ export type AddWordHost = {
   supabase: SupabaseClient;
   currentUserEmail: string | null;
   deckService: Pick<DeckService, "addCard" | "getCards">;
+  account: Pick<AccountService, "promptUpgrade">;
 };
 
 /** A single word or short phrase — something the dictionary could contain. */
@@ -114,7 +116,10 @@ function _getWordAtCursor(editor: Editor): string {
   return wordRange ? editor.getRange(wordRange.from, wordRange.to) : "";
 }
 
-/** Adds one dictionary entry, reporting the outcome as a Notice. */
+/**
+ * Adds one dictionary entry, reporting the outcome as a Notice — except a
+ * full deck, which opens the upgrade modal instead.
+ */
 async function _addEntryToDeck(host: AddWordHost, entry: DictionaryLookupEntry): Promise<void> {
   const isAlreadyInDeck = host.deckService
     .getCards()
@@ -129,6 +134,12 @@ async function _addEntryToDeck(host: AddWordHost, entry: DictionaryLookupEntry):
     await host.deckService.addCard(entry.id);
     new Notice(`Added "${entry.word}" to your deck.`);
   } catch (error) {
+    if (error instanceof CardLimitError) {
+      // The server owns the plan limits, so its message is the only place the
+      // real numbers appear — show it rather than restating them here.
+      host.account.promptUpgrade(error.message);
+      return;
+    }
     new Notice(error instanceof Error ? error.message : String(error));
   } finally {
     addingNotice.hide();

@@ -14,6 +14,23 @@ function isDuplicateCardError(error: { code?: string; message?: string }): boole
   );
 }
 
+/** Thrown when the plan's total-card limit is reached (trigger message code CARD_LIMIT). */
+export class CardLimitError extends Error {}
+
+const CARD_LIMIT_CODE = "CARD_LIMIT";
+
+/**
+ * A user_cards BEFORE INSERT trigger enforces the plan's total-card limit
+ * (Free 500, Plus 2,000, Pro unlimited), rejecting the insert with
+ * `CARD_LIMIT: <user-facing message>`. Everything through the code is
+ * stripped so only the server's explanation reaches the upgrade modal.
+ */
+function toCardLimitError(rawMessage: string): CardLimitError {
+  const afterCode = rawMessage.slice(rawMessage.indexOf(CARD_LIMIT_CODE) + CARD_LIMIT_CODE.length);
+  const reason = afterCode.replace(/^\s*:/, "").trim();
+  return new CardLimitError(reason || "You've reached your plan's card limit.");
+}
+
 const DECK_CARD_SELECT = `
   id,
   deck_id,
@@ -120,6 +137,7 @@ export class DeckService extends Events {
    * cache and highlights without hand-building the row client-side.
    *
    * @param dictionaryId - The dictionary row to add
+   * @throws {CardLimitError} When the plan's total-card limit is reached
    * @throws {Error} When signed out, the word is already in the deck, or the insert fails
    */
   async addCard(dictionaryId: string): Promise<void> {
@@ -151,6 +169,9 @@ export class DeckService extends Events {
     if (error) {
       if (isDuplicateCardError(error)) {
         throw new Error("This word is already in your deck.");
+      }
+      if (error.message.includes(CARD_LIMIT_CODE)) {
+        throw toCardLimitError(error.message);
       }
       throw new Error(`Failed to add the word: ${error.message}`);
     }
