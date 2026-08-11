@@ -17,7 +17,7 @@ export function createSupabaseClient(app: App): SupabaseClient {
   // Reason: the plugin has no generated database types, so the client keeps
   // supabase-js's `any`-based default schema; queries type their rows at the
   // call site instead (e.g. `maybeSingle<SubscriptionRow>()`).
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- untyped default schema; rows are typed at call sites
   return createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       storage: createAuthStorage(app),

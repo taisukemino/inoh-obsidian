@@ -48,9 +48,10 @@ function buildAddButtonTooltip(
     end: to,
     above: true,
     create: () => {
-      const addButton = document.createElement("button");
-      addButton.className = "inoh-add-word-button";
-      addButton.textContent = "＋ Add to Inoh";
+      const addButton = createEl("button", {
+        cls: "inoh-add-word-button",
+        text: "＋ Add to Inoh",
+      });
       // Reason: mousedown would move the cursor and collapse the selection
       // before click fires, dismissing the button under the pointer.
       addButton.addEventListener("mousedown", (event) => event.preventDefault());
