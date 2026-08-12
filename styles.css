@@ -528,23 +528,32 @@ button.inoh-hover-dim:hover {
   opacity: 0.8;
 }
 
-/* Pulsing skeleton where the price lands while Stripe prices load. */
-.inoh-modal .inoh-plan-price-placeholder {
-  width: 76px;
-  height: 20px;
-  margin-top: 4px;
-  border-radius: 6px;
-  background-color: var(--inoh-card-button-bg);
+/* Pulsing text-sized bar exactly where the price text lands while Stripe
+   prices load — in the card's price line and inside the checkout buttons.
+   currentColor keeps it legible on both the red and the light buttons. */
+.inoh-modal .inoh-price-loading {
+  display: inline-block;
+  width: 44px;
+  height: 12px;
+  border-radius: 4px;
+  vertical-align: -1px;
+  background-color: currentColor;
   animation: inoh-pulse 1.2s ease-in-out infinite;
+}
+
+.inoh-modal .inoh-price-loading-large {
+  width: 60px;
+  height: 16px;
+  vertical-align: -2px;
 }
 
 @keyframes inoh-pulse {
   0%,
   100% {
-    opacity: 0.45;
+    opacity: 0.15;
   }
   50% {
-    opacity: 1;
+    opacity: 0.35;
   }
 }
 

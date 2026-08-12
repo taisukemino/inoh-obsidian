@@ -12,6 +12,7 @@ import {
   UNKNOWN_TIER_PRICES,
   type BillingInterval,
   type PaidTier,
+  type PlanPrice,
   type TierPrices,
 } from "./subscription-service";
 
@@ -120,37 +121,41 @@ export class UpgradeModal extends Modal {
     }
 
     card.createDiv({ cls: "inoh-plan-name", text: `Inoh ${TIER_DISPLAY_NAMES[tier]}` });
-    if (tierPrices.month) {
+    if (tierPrices.month || this.isLoadingPrices) {
       const priceLine = card.createDiv({ cls: "inoh-plan-price" });
-      priceLine.appendText(formatPrice(tierPrices.month));
+      if (tierPrices.month) {
+        priceLine.appendText(formatPrice(tierPrices.month));
+      } else {
+        priceLine.createSpan({ cls: "inoh-price-loading inoh-price-loading-large" });
+      }
       priceLine.createSpan({ cls: "inoh-plan-price-interval", text: "/mo" });
-    } else if (this.isLoadingPrices) {
-      card.createDiv({ cls: "inoh-plan-price-placeholder" });
     }
     card.createDiv({ cls: "inoh-plan-pitch", text: TIER_PITCHES[tier] });
 
     const buttons = card.createDiv({ cls: "inoh-plan-buttons" });
-    this.renderCheckoutButton(
-      buttons,
-      planButtonLabel("Yearly", tierPrices.year, savingPercent),
-      tier,
-      "year",
-      true,
-    );
-    this.renderCheckoutButton(buttons, planButtonLabel("Monthly", tierPrices.month), tier, "month", false);
+    this.renderCheckoutButton(buttons, "Yearly", tierPrices.year, savingPercent, tier, "year", true);
+    this.renderCheckoutButton(buttons, "Monthly", tierPrices.month, null, tier, "month", false);
   }
 
+  /** While prices load, the button shows its interval name with a pulse where the price goes. */
   private renderCheckoutButton(
     container: HTMLElement,
-    label: string,
+    intervalName: string,
+    price: PlanPrice | null,
+    savingPercent: number | null,
     tier: PaidTier,
     interval: BillingInterval,
     isPrimary: boolean,
   ): void {
     const button = container.createEl("button", {
       cls: isPrimary ? "inoh-plan-button inoh-plan-button-primary" : "inoh-plan-button",
-      text: label,
     });
+    if (price || !this.isLoadingPrices) {
+      button.setText(planButtonLabel(intervalName, price, savingPercent));
+    } else {
+      button.appendText(`${intervalName} · `);
+      button.createSpan({ cls: "inoh-price-loading" });
+    }
     button.addEventListener("click", () => void this.openCheckout(tier, interval, button));
   }
 
