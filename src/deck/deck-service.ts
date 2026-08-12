@@ -21,7 +21,7 @@ const CARD_LIMIT_CODE = "CARD_LIMIT";
 
 /**
  * A user_cards BEFORE INSERT trigger enforces the plan's total-card limit
- * (Free 500, Plus 2,000, Pro unlimited), rejecting the insert with
+ * (Free 300, Plus 1,000, Pro unlimited), rejecting the insert with
  * `CARD_LIMIT: <user-facing message>`. Everything through the code is
  * stripped so only the server's explanation reaches the upgrade modal.
  */
