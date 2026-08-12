@@ -31,7 +31,6 @@ export class InohSettingsTab extends PluginSettingTab {
           this.getStartedDefinition(),
           this.signedInDefinition(),
           this.planDefinition(),
-          this.discoverWordsDefinition(),
           this.emptyDeckDefinition(),
         ],
       },
@@ -224,22 +223,6 @@ export class InohSettingsTab extends PluginSettingTab {
       return `Cancels on ${lapseDate} — you keep ${TIER_DISPLAY_NAMES[tier]} until then.`;
     }
     return "";
-  }
-
-  /** Own row below the signed-in one; the empty-deck row has its own CTA, so this hides then. */
-  private discoverWordsDefinition(): SettingDefinition {
-    return {
-      name: "Discover words",
-      desc: "Browse words and add them to your deck in the Inoh app.",
-      visible: () => !this.isSignedOut() && this.plugin.deckService.getCards().length > 0,
-      render: (setting) => {
-        setting.addButton((button) =>
-          button.setButtonText("Open inoh.app").onClick(() => {
-            openExternalUrl(WEB_APP_URL);
-          }),
-        );
-      },
-    };
   }
 
   private emptyDeckDefinition(): SettingDefinition {
