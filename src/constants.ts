@@ -1,9 +1,6 @@
 /** The Inoh web app (Expo web export). Word detail lives at /word/<dictionaryId>. */
 export const WEB_APP_URL = "https://inoh.app";
 
-/** Where "Open inoh.app" buttons land: the page for finding words to add. */
-export const DISCOVER_URL = `${WEB_APP_URL}/discover`;
-
 /**
  * Where Stripe returns the user after checkout. Static pages on inoh.app, not
  * `obsidian://` URIs: the stripe-subscribe edge function only accepts

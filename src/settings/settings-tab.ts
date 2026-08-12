@@ -5,7 +5,7 @@ import {
   type SettingDefinition,
   type SettingDefinitionItem,
 } from "obsidian";
-import { DISCOVER_URL, WEB_APP_URL } from "../constants";
+import { WEB_APP_URL } from "../constants";
 import type InohPlugin from "../main";
 import { isPaidTier, TIER_DISPLAY_NAMES } from "../subscriptions";
 import { openExternalUrl } from "../ui";
@@ -147,8 +147,10 @@ export class InohSettingsTab extends PluginSettingTab {
         setting.addButton((button) =>
           button.setButtonText("Refresh").onClick(() => void this.reloadAccountState()),
         );
-        setting.addButton((button) =>
-          button
+        setting.addButton((button) => {
+          // Obsidian's destructive buttons get no hover feedback; dim on hover.
+          button.buttonEl.addClass("inoh-hover-dim");
+          return button
             .setButtonText("Sign out")
             .setDestructive()
             .onClick(async () => {
@@ -158,8 +160,8 @@ export class InohSettingsTab extends PluginSettingTab {
                 new Notice(error instanceof Error ? error.message : String(error));
               }
               this.refresh();
-            }),
-        );
+            });
+        });
       },
     };
   }
@@ -233,7 +235,7 @@ export class InohSettingsTab extends PluginSettingTab {
       render: (setting) => {
         setting.addButton((button) =>
           button.setButtonText("Open inoh.app").onClick(() => {
-            openExternalUrl(DISCOVER_URL);
+            openExternalUrl(WEB_APP_URL);
           }),
         );
       },
@@ -258,7 +260,7 @@ export class InohSettingsTab extends PluginSettingTab {
             .setButtonText("Open inoh.app")
             .setCta()
             .onClick(() => {
-              openExternalUrl(DISCOVER_URL);
+              openExternalUrl(WEB_APP_URL);
             }),
         );
       },

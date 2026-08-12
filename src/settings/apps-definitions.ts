@@ -21,6 +21,13 @@ export function appsDefinitions(): SettingDefinition[] {
   return apps.map(({ name, icon, url }) => ({
     name,
     render: (setting) => {
+      // The settings tab's update() re-runs render on the same elements, so
+      // wiring more than once stacks click listeners — one click would then
+      // open a browser tab per re-render.
+      if (setting.nameEl.dataset.inohAppRowRendered === "true") {
+        return;
+      }
+      setting.nameEl.dataset.inohAppRowRendered = "true";
       const iconElement = setting.nameEl.createSpan({ cls: "inoh-app-icon" });
       setIcon(iconElement, icon);
       setting.nameEl.prepend(iconElement);

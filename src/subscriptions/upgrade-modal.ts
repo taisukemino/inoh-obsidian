@@ -1,8 +1,8 @@
-import { App, Modal, Notice, Platform, Setting } from "obsidian";
+import { App, Modal, Notice, Platform } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { removeModalCloseButtons } from "../editor";
 import { openExternalUrl } from "../ui";
-import { planButtonLabel, yearlySavingPercent } from "./price-format";
+import { formatPrice, planButtonLabel, yearlySavingPercent } from "./price-format";
 import {
   ActiveSubscriptionError,
   fetchTierPrices,
@@ -24,7 +24,7 @@ const TIER_PITCHES: Record<PaidTier, string> = {
   pro: "Everything in Plus, unlimited cards + 300 pronunciation practices/day.",
 };
 
-/** Plus is the target middle tier, so its row carries the call-to-action styling. */
+/** Plus is the target middle tier, so its card carries the "Most popular" badge. */
 const HIGHLIGHTED_TIER: PaidTier = "plus";
 
 /**
@@ -89,35 +89,63 @@ export class UpgradeModal extends Modal {
       text: "Checkout opens in your browser. Come back here when you're done and your plan updates automatically.",
     });
 
-    this.renderTierOffer("plus");
-    this.renderTierOffer("pro");
+    const cards = this.contentEl.createDiv({ cls: "inoh-plan-cards" });
+    this.renderTierCard(cards, "plus");
+    this.renderTierCard(cards, "pro");
 
-    new Setting(this.contentEl).addButton((button) =>
-      button.setButtonText("Not now").onClick(() => this.close()),
-    );
+    const dismissButton = this.contentEl.createEl("button", {
+      cls: "inoh-plan-dismiss",
+      text: "Not now",
+    });
+    dismissButton.addEventListener("click", () => this.close());
   }
 
-  /** One tier's row: its pitch plus a checkout button per billing interval. */
-  private renderTierOffer(tier: PaidTier): void {
+  /**
+   * One tier's card, styled after the inoh.app pricing cards: name, monthly
+   * price, pitch, and a checkout button per billing interval. Both buttons
+   * on both cards start checkout; the highlighted tier only gets a badge.
+   */
+  private renderTierCard(container: HTMLElement, tier: PaidTier): void {
     const tierPrices = this.prices[tier];
     const savingPercent = yearlySavingPercent(tierPrices);
 
-    new Setting(this.contentEl)
-      .setName(`Inoh ${TIER_DISPLAY_NAMES[tier]}`)
-      .setDesc(TIER_PITCHES[tier])
-      .addButton((button) => {
-        button
-          .setButtonText(planButtonLabel("Yearly", tierPrices.year, savingPercent))
-          .onClick(() => void this.openCheckout(tier, "year"));
-        if (tier === HIGHLIGHTED_TIER) {
-          button.setCta();
-        }
-      })
-      .addButton((button) =>
-        button
-          .setButtonText(planButtonLabel("Monthly", tierPrices.month))
-          .onClick(() => void this.openCheckout(tier, "month")),
-      );
+    const card = container.createDiv({ cls: "inoh-plan-card" });
+    if (tier === HIGHLIGHTED_TIER) {
+      card.addClass("inoh-plan-card-highlighted");
+      card.createDiv({ cls: "inoh-plan-badge", text: "Most popular" });
+    }
+
+    card.createDiv({ cls: "inoh-plan-name", text: `Inoh ${TIER_DISPLAY_NAMES[tier]}` });
+    if (tierPrices.month) {
+      const priceLine = card.createDiv({ cls: "inoh-plan-price" });
+      priceLine.appendText(formatPrice(tierPrices.month));
+      priceLine.createSpan({ cls: "inoh-plan-price-interval", text: "/mo" });
+    }
+    card.createDiv({ cls: "inoh-plan-pitch", text: TIER_PITCHES[tier] });
+
+    const buttons = card.createDiv({ cls: "inoh-plan-buttons" });
+    this.renderCheckoutButton(
+      buttons,
+      planButtonLabel("Yearly", tierPrices.year, savingPercent),
+      tier,
+      "year",
+      true,
+    );
+    this.renderCheckoutButton(buttons, planButtonLabel("Monthly", tierPrices.month), tier, "month", false);
+  }
+
+  private renderCheckoutButton(
+    container: HTMLElement,
+    label: string,
+    tier: PaidTier,
+    interval: BillingInterval,
+    isPrimary: boolean,
+  ): void {
+    const button = container.createEl("button", {
+      cls: isPrimary ? "inoh-plan-button inoh-plan-button-primary" : "inoh-plan-button",
+      text: label,
+    });
+    button.addEventListener("click", () => void this.openCheckout(tier, interval));
   }
 
   override onClose(): void {

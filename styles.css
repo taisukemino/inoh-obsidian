@@ -418,3 +418,112 @@ button.inoh-sense-option strong {
   background-color: transparent;
   border: none;
 }
+
+/* ========= Upgrade modal plan cards ========= */
+
+/* Styled after the inoh.app pricing cards: white cards on the cream dialog,
+   brand-red accents, and a "Most popular" badge on the highlighted tier. */
+.inoh-modal .inoh-plan-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 12px 0 4px;
+}
+
+.inoh-modal .inoh-plan-card {
+  position: relative;
+  background-color: #ffffff;
+  border: 1px solid var(--inoh-card-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.inoh-modal .inoh-plan-card-highlighted {
+  border-color: var(--inoh-brand);
+  box-shadow: 0 10px 30px rgba(26, 24, 21, 0.07);
+}
+
+.inoh-modal .inoh-plan-badge {
+  position: absolute;
+  top: -9px;
+  right: 14px;
+  background-color: var(--inoh-brand);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.inoh-modal .inoh-plan-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--inoh-card-text);
+}
+
+.inoh-modal .inoh-plan-price {
+  margin-top: 2px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--inoh-brand);
+}
+
+.inoh-modal .inoh-plan-price-interval {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--inoh-card-text-muted);
+  margin-left: 2px;
+}
+
+.inoh-modal .inoh-plan-pitch {
+  margin: 6px 0 12px;
+  font-size: 13px;
+  color: var(--inoh-card-text-secondary);
+}
+
+.inoh-modal .inoh-plan-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inoh-modal button.inoh-plan-button {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  background-color: var(--inoh-card-button-bg);
+  border: 1px solid var(--inoh-card-border);
+  color: var(--inoh-card-text);
+  box-shadow: none;
+}
+
+.inoh-modal button.inoh-plan-button:hover {
+  opacity: 0.85;
+}
+
+.inoh-modal button.inoh-plan-button-primary {
+  background-color: var(--inoh-brand);
+  border-color: var(--inoh-brand);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.inoh-modal button.inoh-plan-dismiss {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 6px 0;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--inoh-card-text-muted);
+}
+
+.inoh-modal button.inoh-plan-dismiss:hover {
+  opacity: 0.8;
+}
+
+/* Settings buttons that Obsidian gives no hover feedback (e.g. Sign out). */
+button.inoh-hover-dim:hover {
+  opacity: 0.8;
+}
