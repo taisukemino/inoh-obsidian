@@ -21,8 +21,8 @@ import {
  * enforced server-side; these strings only pitch them.
  */
 const TIER_PITCHES: Record<PaidTier, string> = {
-  plus: "Up to 1,000 cards, unlimited daily reviews + 30 pronunciation practices/day.",
-  pro: "Everything in Plus, unlimited cards + 300 pronunciation practices/day.",
+  plus: "Up to 1,000 cards, unlimited daily reviews + 1,000 pronunciation practices/month.",
+  pro: "Everything in Plus, unlimited cards + 10,000 pronunciation practices/month.",
 };
 
 /** Plus is the target middle tier, so its card carries the "Most popular" badge. */
