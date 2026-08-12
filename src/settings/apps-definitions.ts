@@ -20,24 +20,24 @@ export function appsDefinitions(): SettingDefinition[] {
   ];
   return apps.map(({ name, icon, url }) => ({
     name,
+    // The settings tab's update() re-runs render on the same row elements: it
+    // resets the visible content (icon, "Coming soon") but keeps the elements
+    // and their listeners. So visuals are re-added whenever they are missing,
+    // while the click handler is assigned (not addEventListener) so a
+    // re-render replaces it instead of stacking one opened tab per refresh.
     render: (setting) => {
-      // The settings tab's update() re-runs render on the same elements, so
-      // wiring more than once stacks click listeners — one click would then
-      // open a browser tab per re-render.
-      if (setting.nameEl.dataset.inohAppRowRendered === "true") {
-        return;
+      if (!setting.nameEl.querySelector(".inoh-app-icon")) {
+        const iconElement = setting.nameEl.createSpan({ cls: "inoh-app-icon" });
+        setIcon(iconElement, icon);
+        setting.nameEl.prepend(iconElement);
       }
-      setting.nameEl.dataset.inohAppRowRendered = "true";
-      const iconElement = setting.nameEl.createSpan({ cls: "inoh-app-icon" });
-      setIcon(iconElement, icon);
-      setting.nameEl.prepend(iconElement);
       if (url) {
         setting.nameEl.addClass("inoh-app-name-link");
         setting.nameEl.setAttribute("role", "link");
-        setting.nameEl.addEventListener("click", () => {
+        setting.nameEl.onclick = () => {
           openExternalUrl(url);
-        });
-      } else {
+        };
+      } else if (!setting.controlEl.querySelector(".inoh-coming-soon")) {
         setting.controlEl.createSpan({ cls: "inoh-coming-soon", text: "Coming soon" });
       }
     },
