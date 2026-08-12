@@ -527,3 +527,48 @@ button.inoh-sense-option strong {
 button.inoh-hover-dim:hover {
   opacity: 0.8;
 }
+
+/* Pulsing skeleton where the price lands while Stripe prices load. */
+.inoh-modal .inoh-plan-price-placeholder {
+  width: 76px;
+  height: 20px;
+  margin-top: 4px;
+  border-radius: 6px;
+  background-color: var(--inoh-card-button-bg);
+  animation: inoh-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes inoh-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Starting checkout takes a beat: the clicked button spins, the rest hold. */
+.inoh-modal button.inoh-plan-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.inoh-modal button.inoh-plan-button-loading::after {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 6px;
+  vertical-align: -1px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: inoh-spin 0.7s linear infinite;
+}
+
+@keyframes inoh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

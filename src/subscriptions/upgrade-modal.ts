@@ -38,6 +38,7 @@ const HIGHLIGHTED_TIER: PaidTier = "plus";
  */
 export class UpgradeModal extends Modal {
   private isBusy = false;
+  private isLoadingPrices = true;
   private prices: TierPrices = UNKNOWN_TIER_PRICES;
 
   /**
@@ -72,9 +73,12 @@ export class UpgradeModal extends Modal {
   private async loadPrices(): Promise<void> {
     try {
       this.prices = await fetchTierPrices(this.supabase);
-      this.render();
     } catch (error) {
       console.error("Inoh: could not load subscription prices", error);
+    } finally {
+      // Repaint even on failure, so the price skeletons stop pulsing.
+      this.isLoadingPrices = false;
+      this.render();
     }
   }
 
@@ -120,6 +124,8 @@ export class UpgradeModal extends Modal {
       const priceLine = card.createDiv({ cls: "inoh-plan-price" });
       priceLine.appendText(formatPrice(tierPrices.month));
       priceLine.createSpan({ cls: "inoh-plan-price-interval", text: "/mo" });
+    } else if (this.isLoadingPrices) {
+      card.createDiv({ cls: "inoh-plan-price-placeholder" });
     }
     card.createDiv({ cls: "inoh-plan-pitch", text: TIER_PITCHES[tier] });
 
@@ -145,18 +151,28 @@ export class UpgradeModal extends Modal {
       cls: isPrimary ? "inoh-plan-button inoh-plan-button-primary" : "inoh-plan-button",
       text: label,
     });
-    button.addEventListener("click", () => void this.openCheckout(tier, interval));
+    button.addEventListener("click", () => void this.openCheckout(tier, interval, button));
   }
 
   override onClose(): void {
     this.contentEl.empty();
   }
 
-  private async openCheckout(tier: PaidTier, interval: BillingInterval): Promise<void> {
+  private async openCheckout(
+    tier: PaidTier,
+    interval: BillingInterval,
+    clickedButton: HTMLButtonElement,
+  ): Promise<void> {
     if (this.isBusy) {
       return;
     }
     this.isBusy = true;
+    // Reaching Stripe takes a moment; show it on the clicked button and hold
+    // the others so a second click cannot start a competing checkout.
+    const originalLabel = clickedButton.textContent ?? "";
+    clickedButton.setText("Opening…");
+    clickedButton.addClass("inoh-plan-button-loading");
+    this.setPlanButtonsDisabled(true);
     try {
       openExternalUrl(await startCheckout(this.supabase, tier, interval));
       this.close();
@@ -164,12 +180,23 @@ export class UpgradeModal extends Modal {
     } catch (error) {
       if (error instanceof ActiveSubscriptionError) {
         await this.openBillingPortal();
-        return;
+      } else {
+        new Notice(error instanceof Error ? error.message : String(error));
       }
-      new Notice(error instanceof Error ? error.message : String(error));
     } finally {
       this.isBusy = false;
+      // On the success path the modal is already closed; restoring detached
+      // elements is harmless, and on errors the buttons come back usable.
+      clickedButton.setText(originalLabel);
+      clickedButton.removeClass("inoh-plan-button-loading");
+      this.setPlanButtonsDisabled(false);
     }
+  }
+
+  private setPlanButtonsDisabled(disabled: boolean): void {
+    this.contentEl
+      .querySelectorAll<HTMLButtonElement>("button.inoh-plan-button")
+      .forEach((button) => (button.disabled = disabled));
   }
 
   /**
