@@ -1,6 +1,6 @@
 import esbuild from "esbuild";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 
@@ -74,6 +74,15 @@ if (!isProductionBuild) {
 const copyPluginAssetsPlugin = {
   name: "copy-plugin-assets",
   setup(build) {
+    // Reason: esbuild's watcher only tracks the JS module graph, so a change
+    // to styles.css or manifest.json alone never triggered a rebuild and the
+    // vault silently kept stale copies. Registering them as watch files of
+    // the entry makes any change rebuild — and therefore re-copy.
+    build.onLoad({ filter: /src[\\/]main\.ts$/ }, async (args) => ({
+      contents: await readFile(args.path, "utf8"),
+      loader: "ts",
+      watchFiles: [path.resolve("styles.css"), path.resolve("manifest.json")],
+    }));
     build.onEnd(async (result) => {
       if (result.errors.length > 0 || isProductionBuild) {
         return;
