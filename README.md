@@ -3,12 +3,12 @@
 <!-- Suggestions are disabled until their quality improves. Original tagline:
 Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you write and suggests places to use them — so you actually use what you're learning.
 -->
-Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you write — so you actually use what you're learning.
+Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you write, so you actually use what you're learning.
 
 ## Features
 
-- **Deck-word highlighting.** Words from your deck get a dotted underline as you write, including inflected forms (*crossed* for *cross*, *went* for *go*) and multi-word idioms (*counted my blessings* for *count one's blessings*, *gave the idea up* for *give up*). Matching is exact against real English forms — *brain* never lights up *brainy*.
-- **Hover — or tap — to review.** Hovering a highlighted word shows its definition, phonetic, example sentence, and pronunciation audio, with a link to the word in the Inoh app — plus a "Remove from deck" action for words you've finished learning. On mobile, where hover doesn't exist, tapping a highlighted word opens the same card in a dialog.
+- **Deck-word highlighting.** Words from your deck get a dotted underline as you write, including inflected forms (*crossed* for *cross*, *went* for *go*) and multi-word idioms (*counted my blessings* for *count one's blessings*, *gave the idea up* for *give up*). Matching is exact against real English forms: *brain* never lights up *brainy*.
+- **Hover or tap to review.** Hovering a highlighted word shows its definition, phonetic, example sentence, and pronunciation audio, with a link to the word in the Inoh app, plus a "Remove from deck" action for words you've finished learning. On mobile, where hover doesn't exist, tapping a highlighted word opens the same card in a dialog.
 <!-- Suggestions are disabled until their quality improves. Original bullets:
 - **Hover — or tap — to review.** … On mobile, where hover doesn't exist, tapping a highlighted word or suggested phrase opens the same card in a dialog.
 - **AI suggestions.** Run **Suggest deck words for selection or note** — it works on the selected passage, or the entire note when nothing is selected. On mobile the selection is lost when the command palette opens, so there the command is named **Suggest deck words for entire note** and always covers the whole note. Phrases that could be rewritten with one of your deck words get a wavy underline; hover one to see the deck word, its definition, the rewrite, and a one-sentence explanation of why it fits — then Apply or Dismiss. Free accounts get a limited number of suggestion requests per day; Inoh Pro is unlimited — you can upgrade from the plugin settings without leaving Obsidian.
@@ -19,8 +19,8 @@ Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you wr
 ## Getting started
 
 1. Enable the plugin, then open its settings.
-2. Click **Sign in or sign up** — enter your email and the six-digit code you receive. A new email creates an Inoh account automatically.
-3. Build your vocabulary deck at [inoh.app](https://inoh.app) (or in the Inoh iOS app), then hit **Refresh** — or just click the status bar item.
+2. Click **Sign in or sign up**, then enter your email and the six-digit code you receive. A new email creates an Inoh account automatically.
+3. Build your vocabulary deck at [inoh.app](https://inoh.app) (or in the Inoh iOS app), then hit **Refresh**, or just click the status bar item.
 4. Write. Deck words light up as you type; the status bar shows how many words are loaded.
 
 ## Network use disclosure
