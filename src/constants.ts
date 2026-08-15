@@ -6,9 +6,10 @@ export const WEB_APP_URL = "https://inoh.app";
  * `obsidian://` URIs: the stripe-subscribe edge function only accepts
  * redirect URLs Inoh owns (see _shared/stripe-redirect-urls.ts in
  * inoh-backend), and Stripe rejects unregistered custom schemes anyway.
+ * `from` tells the page which app to send the user back to.
  */
-export const CHECKOUT_SUCCESS_URL = `${WEB_APP_URL}/checkout-success`;
-export const CHECKOUT_CANCEL_URL = `${WEB_APP_URL}/checkout-cancel`;
+export const CHECKOUT_SUCCESS_URL = `${WEB_APP_URL}/checkout-success?from=obsidian`;
+export const CHECKOUT_CANCEL_URL = `${WEB_APP_URL}/checkout-cancel?from=obsidian`;
 
 /**
  * Product pages for the other Inoh ecosystem apps, shown in the Apps settings
