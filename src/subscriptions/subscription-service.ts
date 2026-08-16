@@ -1,6 +1,6 @@
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { CHECKOUT_CANCEL_URL, CHECKOUT_SUCCESS_URL } from "../constants";
+import { BILLING_PORTAL_RETURN_URL, CHECKOUT_CANCEL_URL, CHECKOUT_SUCCESS_URL } from "../constants";
 import { invokeEdgeFunction } from "../supabase";
 
 /**
@@ -167,7 +167,7 @@ export async function openBillingPortalUrl(supabase: SupabaseClient): Promise<st
   const { data, error } = await invokeEdgeFunction<{ url?: string }>(
     supabase,
     "manage-subscription",
-    { returnUrl: CHECKOUT_SUCCESS_URL },
+    { returnUrl: BILLING_PORTAL_RETURN_URL },
   );
 
   if (error) {

@@ -528,6 +528,16 @@ button.inoh-hover-dim:hover {
   opacity: 0.8;
 }
 
+/* Obsidian leaves settings buttons at the arrow cursor; ours are actions
+   (Sign in, Manage, Upgrade), so they should read as clickable. */
+.inoh-settings button {
+  cursor: pointer;
+}
+
+.inoh-settings button:disabled {
+  cursor: default;
+}
+
 /* Spinner exactly where the price text lands while Stripe prices load — in
    the card's price line and inside the checkout buttons. currentColor keeps
    it legible on both the red and the light buttons. */
@@ -555,7 +565,9 @@ button.inoh-hover-dim:hover {
   cursor: default;
 }
 
-.inoh-modal button.inoh-plan-button-loading::after {
+/* Spinner appended to a button while its Stripe round-trip is in flight —
+   the checkout buttons in the upgrade modal and Manage in settings. */
+button.inoh-button-loading::after {
   content: "";
   display: inline-block;
   width: 10px;

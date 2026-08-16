@@ -12,6 +12,13 @@ export const CHECKOUT_SUCCESS_URL = `${WEB_APP_URL}/checkout-success?from=obsidi
 export const CHECKOUT_CANCEL_URL = `${WEB_APP_URL}/checkout-cancel?from=obsidian`;
 
 /**
+ * Where the Stripe billing portal's "Return to Inoh" link lands. Its own page,
+ * not the checkout-success one: a subscriber who only checked their invoices
+ * must not be told "You're subscribed 🎉" as if they had just paid again.
+ */
+export const BILLING_PORTAL_RETURN_URL = `${WEB_APP_URL}/billing-return?from=obsidian`;
+
+/**
  * Product pages for the other Inoh ecosystem apps, shown in the Apps settings
  * group. The iOS app (mid-rebrand) has no URL yet and renders as
  * "Coming soon" — add its constant once live.

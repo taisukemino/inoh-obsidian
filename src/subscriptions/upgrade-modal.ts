@@ -176,7 +176,7 @@ export class UpgradeModal extends Modal {
     // the others so a second click cannot start a competing checkout.
     const originalLabel = clickedButton.textContent ?? "";
     clickedButton.setText("Opening…");
-    clickedButton.addClass("inoh-plan-button-loading");
+    clickedButton.addClass("inoh-button-loading");
     this.setPlanButtonsDisabled(true);
     try {
       openExternalUrl(await startCheckout(this.supabase, tier, interval));
@@ -193,7 +193,7 @@ export class UpgradeModal extends Modal {
       // On the success path the modal is already closed; restoring detached
       // elements is harmless, and on errors the buttons come back usable.
       clickedButton.setText(originalLabel);
-      clickedButton.removeClass("inoh-plan-button-loading");
+      clickedButton.removeClass("inoh-button-loading");
       this.setPlanButtonsDisabled(false);
     }
   }
