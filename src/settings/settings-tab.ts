@@ -2,7 +2,6 @@ import {
   App,
   Notice,
   PluginSettingTab,
-  type ButtonComponent,
   type SettingDefinition,
   type SettingDefinitionItem,
 } from "obsidian";
@@ -190,13 +189,9 @@ export class InohSettingsTab extends PluginSettingTab {
         }
         if (canManageBilling) {
           setting.addButton((button) =>
-            button
-              .setButtonText("Manage")
-              .onClick(() =>
-                runWithButtonSpinner(button, "Opening…", () =>
-                  this.plugin.account.openBillingPortal(),
-                ),
-              ),
+            // Reason: returning the promise makes ButtonComponent show its own
+            // spinner (mod-loading) and swallow clicks until Stripe answers.
+            button.setButtonText("Manage").onClick(() => this.plugin.account.openBillingPortal()),
           );
           return;
         }
@@ -255,30 +250,5 @@ export class InohSettingsTab extends PluginSettingTab {
         );
       },
     };
-  }
-}
-
-/**
- * Runs an async task while the button shows a spinner and refuses clicks,
- * then restores it. Stripe round-trips take a beat; without feedback the user
- * clicks again and ends up with two billing tabs.
- *
- * @param button - The button that was clicked
- * @param busyLabel - What the button says while the task runs
- * @param task - The work to wait for
- */
-async function runWithButtonSpinner(
-  button: ButtonComponent,
-  busyLabel: string,
-  task: () => Promise<void>,
-): Promise<void> {
-  const idleLabel = button.buttonEl.textContent ?? "";
-  button.setButtonText(busyLabel).setDisabled(true);
-  button.buttonEl.addClass("inoh-button-loading");
-  try {
-    await task();
-  } finally {
-    button.setButtonText(idleLabel).setDisabled(false);
-    button.buttonEl.removeClass("inoh-button-loading");
   }
 }

@@ -565,8 +565,11 @@ button.inoh-hover-dim:hover {
   cursor: default;
 }
 
-/* Spinner appended to a button while its Stripe round-trip is in flight —
-   the checkout buttons in the upgrade modal and Manage in settings. */
+/* Spinner appended to a plain button while its Stripe round-trip is in
+   flight (the upgrade modal's checkout buttons). Settings buttons are
+   ButtonComponents, which get Obsidian's own mod-loading spinner instead —
+   never add this class there, it paints over that spinner in currentColor,
+   which mod-loading has just made transparent. */
 button.inoh-button-loading::after {
   content: "";
   display: inline-block;
