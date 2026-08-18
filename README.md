@@ -3,7 +3,7 @@
 <!-- Suggestions are disabled until their quality improves. Original tagline:
 Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you write and suggests places to use them — so you actually use what you're learning.
 -->
-Highlights words from your [Inoh](https://inoh.app) vocabulary deck while you write, so you actually use what you're learning.
+[Inoh](https://inoh.app) is the vocabulary app for the articulate. This plugin highlights words from your Inoh deck while you write, so you actually use what you're learning.
 
 ## Features
 
