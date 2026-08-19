@@ -168,9 +168,9 @@ export class InohSettingsTab extends PluginSettingTab {
   }
 
   private planDefinition(): SettingDefinition {
-    const { tier, hasLiveStripeSubscription } = this.plugin.account.subscription;
+    const { tier, hasLiveStripeSubscription, isPastDue } = this.plugin.account.subscription;
     // Mirrors the Inoh app: a live-but-unhealthy subscription (past_due) is not
-    // entitled to a paid plan, but still needs the portal to fix its card.
+    // entitled to a paid plan, but still needs Plan & Billing to fix its card.
     const canManageBilling = isPaidTier(tier) || hasLiveStripeSubscription;
 
     return {
@@ -188,11 +188,14 @@ export class InohSettingsTab extends PluginSettingTab {
           return;
         }
         if (canManageBilling) {
-          setting.addButton((button) =>
-            // Reason: returning the promise makes ButtonComponent show its own
-            // spinner (mod-loading) and swallow clicks until Stripe answers.
-            button.setButtonText("Manage").onClick(() => this.plugin.account.openBillingPortal()),
-          );
+          // Upgrades, downgrades, cancel/resume, and the card all live on the
+          // web app's Plan & Billing page — one place, never a dead end.
+          setting.addButton((button) => {
+            button
+              .setButtonText(isPastDue ? "Fix payment" : "Manage")
+              .onClick(() => this.plugin.account.openBilling());
+            if (isPastDue) button.setWarning();
+          });
           return;
         }
         setting.addButton((button) =>
@@ -210,19 +213,25 @@ export class InohSettingsTab extends PluginSettingTab {
   /**
    * Quotas and prices are owned server-side, so no number is quoted here —
    * the upgrade modal reads live prices and the apps name a limit when it is
-   * actually hit.
+   * actually hit. What IS said is the one thing about to change.
    */
   private planDescription(): string {
-    const { tier, cancelAtPeriodEnd, currentPeriodEnd } = this.plugin.account.subscription;
+    const { tier, isPastDue, scheduledTier, currentPeriodEnd } = this.plugin.account.subscription;
     if (this.plugin.account.subscriptionCheckFailed) {
       return "Could not check your plan. If you subscribed, this is not your real plan.";
+    }
+    if (isPastDue) {
+      return "Payment failed — update your card on Plan & Billing to keep your plan.";
     }
     if (!isPaidTier(tier)) {
       return "";
     }
-    if (cancelAtPeriodEnd && currentPeriodEnd) {
-      const lapseDate = new Date(currentPeriodEnd).toLocaleDateString();
-      return `Cancels on ${lapseDate} — you keep ${TIER_DISPLAY_NAMES[tier]} until then.`;
+    const changeDate = currentPeriodEnd ? new Date(currentPeriodEnd).toLocaleDateString() : null;
+    if (scheduledTier === "free" && changeDate) {
+      return `Cancels on ${changeDate} — you keep ${TIER_DISPLAY_NAMES[tier]} until then.`;
+    }
+    if (scheduledTier && changeDate) {
+      return `Changes to ${TIER_DISPLAY_NAMES[scheduledTier]} on ${changeDate}.`;
     }
     return "";
   }

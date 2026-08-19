@@ -1,12 +1,12 @@
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { BILLING_PORTAL_RETURN_URL, CHECKOUT_CANCEL_URL, CHECKOUT_SUCCESS_URL } from "../constants";
+import { CHECKOUT_CANCEL_URL, CHECKOUT_SUCCESS_URL } from "../constants";
 import { invokeEdgeFunction } from "../supabase";
 
 /**
  * Thrown when the account already has a live Stripe subscription, so checkout
  * would double-bill (edge function code `subscription_exists`). The caller
- * should send the user to the billing portal instead.
+ * should send the user to the web app's Plan & Billing page instead.
  */
 export class ActiveSubscriptionError extends Error {}
 
@@ -15,7 +15,7 @@ type SubscriptionRow = {
   plan: string;
   status: string;
   stripe_subscription_id: string | null;
-  cancel_at_period_end: boolean | null;
+  scheduled_plan: string | null;
   current_period_end: string | null;
 };
 
@@ -47,22 +47,32 @@ export type SubscriptionState = {
   tier: SubscriptionTier;
   /**
    * A Stripe subscription exists that can still bill or recover — including
-   * `past_due`, where the user is not entitled but does need the billing portal
-   * to fix their card. Mirrors `hasLiveStripeSubscription` in the Inoh app.
+   * `past_due`, where the user is not entitled but does need to fix their
+   * card. Mirrors `hasLiveStripeSubscription` in the Inoh app.
    */
   hasLiveStripeSubscription: boolean;
-  /** True when the paid plan is winding down at the end of the paid period. */
-  cancelAtPeriodEnd: boolean;
-  /** ISO timestamp the paid plan lapses on, when it is winding down. */
+  /** The last payment failed; the plan is on hold until the card is fixed. */
+  isPastDue: boolean;
+  /**
+   * The plan the subscription moves to at the end of the paid period: "free"
+   * for a cancellation, a paid tier for a scheduled downgrade, null when
+   * nothing is pending (PRI-20493).
+   */
+  scheduledTier: SubscriptionTier | null;
+  /** ISO timestamp of the current period end (renewal or change date). */
   currentPeriodEnd: string | null;
 };
 
 export const FREE_SUBSCRIPTION: SubscriptionState = {
   tier: "free",
   hasLiveStripeSubscription: false,
-  cancelAtPeriodEnd: false,
+  isPastDue: false,
+  scheduledTier: null,
   currentPeriodEnd: null,
 };
+
+const isTier = (value: string | null): value is SubscriptionTier =>
+  value === "free" || value === "plus" || value === "pro";
 
 /** Statuses where a paid plan is entitled — the backend's predicate, verbatim. */
 const ENTITLED_STATUSES = new Set(["active", "trialing"]);
@@ -156,33 +166,6 @@ export async function startCheckout(
 }
 
 /**
- * Asks manage-subscription for a Stripe billing portal URL, where the user can
- * see and change an existing subscription.
- *
- * @param supabase - Signed-in Supabase client
- * @returns The hosted billing portal URL to open in a browser
- * @throws {Error} When the request fails
- */
-export async function openBillingPortalUrl(supabase: SupabaseClient): Promise<string> {
-  const { data, error } = await invokeEdgeFunction<{ url?: string }>(
-    supabase,
-    "manage-subscription",
-    { returnUrl: BILLING_PORTAL_RETURN_URL },
-  );
-
-  if (error) {
-    throw await toFriendlyError(
-      error,
-      "Could not open your billing settings. Try again in a moment.",
-    );
-  }
-  if (!data?.url) {
-    throw new Error("Stripe did not return a billing page. Try again in a moment.");
-  }
-  return data.url;
-}
-
-/**
  * Reads the signed-in user's subscription state.
  *
  * A paid plan (`plus` or `pro`) is entitled while its status is `active` or
@@ -201,7 +184,7 @@ export async function fetchSubscriptionState(
 ): Promise<SubscriptionState> {
   const { data, error } = await supabase
     .from("subscriptions")
-    .select("plan, status, stripe_subscription_id, cancel_at_period_end, current_period_end")
+    .select("plan, status, stripe_subscription_id, scheduled_plan, current_period_end")
     .eq("user_id", userId)
     .maybeSingle<SubscriptionRow>();
 
@@ -217,7 +200,8 @@ export async function fetchSubscriptionState(
     tier: isEntitledPaidPlan ? (data.plan as PaidTier) : "free",
     hasLiveStripeSubscription:
       Boolean(data.stripe_subscription_id) && LIVE_STRIPE_STATUSES.has(data.status),
-    cancelAtPeriodEnd: data.cancel_at_period_end === true,
+    isPastDue: data.status === "past_due",
+    scheduledTier: isTier(data.scheduled_plan) ? data.scheduled_plan : null,
     currentPeriodEnd: data.current_period_end,
   };
 }
