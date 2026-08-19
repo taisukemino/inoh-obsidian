@@ -1,11 +1,11 @@
 import { Notice, type App } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchUsername } from "../supabase";
+import { BILLING_URL } from "../constants";
 import { openExternalUrl } from "../ui";
 import {
   fetchSubscriptionState,
   isPaidTier,
-  openBillingPortalUrl,
   FREE_SUBSCRIPTION,
   TIER_DISPLAY_NAMES,
   type SubscriptionState,
@@ -14,8 +14,8 @@ import { UpgradeModal } from "./upgrade-modal";
 
 /**
  * Owns what the signed-in account is entitled to, beyond the session itself:
- * the subscription plan, the display name, and the round-trips to Stripe
- * (checkout, billing portal) that change the plan.
+ * the subscription plan, the display name, and the round-trips (checkout,
+ * the web app's Plan & Billing page) that change the plan.
  */
 export class AccountService {
   subscription: SubscriptionState = FREE_SUBSCRIPTION;
@@ -23,8 +23,8 @@ export class AccountService {
   subscriptionCheckFailed = false;
   /** Display name from the Inoh app; null for accounts that never set one. */
   username: string | null = null;
-  /** Which Stripe flow the user was sent to, until they come back from it. */
-  private pendingStripeReturn: "checkout" | "portal" | null = null;
+  /** Which flow the user was sent to, until they come back from it. */
+  private pendingStripeReturn: "checkout" | "billing" | null = null;
 
   constructor(
     private readonly app: App,
@@ -81,17 +81,14 @@ export class AccountService {
   }
 
   /**
-   * Opens the Stripe billing portal, where the user can change payment details
-   * or cancel. Reached from the settings Manage button.
+   * Opens the web app's Plan & Billing page, where the user can upgrade,
+   * downgrade, cancel, resume, or fix their card. Reached from the settings
+   * Manage button.
    */
-  async openBillingPortal(): Promise<void> {
-    try {
-      openExternalUrl(await openBillingPortalUrl(this.supabase));
-      // The portal can change the plan, so re-read it when the user returns.
-      this.pendingStripeReturn = "portal";
-    } catch (error) {
-      new Notice(error instanceof Error ? error.message : String(error));
-    }
+  openBilling(): void {
+    openExternalUrl(BILLING_URL);
+    // The page can change the plan, so re-read it when the user returns.
+    this.pendingStripeReturn = "billing";
   }
 
   /**
@@ -113,9 +110,9 @@ export class AccountService {
       // including a cancellation notice, not just an upgrade.
       this.onChanged();
 
-      // The portal writes its changes before the user leaves it, so one read is
-      // enough — and it may well have cancelled rather than upgraded.
-      if (pendingFlow === "portal") {
+      // Plan & Billing applies changes before the user leaves it, so one read
+      // is enough — and it may well have cancelled rather than upgraded.
+      if (pendingFlow === "billing") {
         this.pendingStripeReturn = null;
         return;
       }

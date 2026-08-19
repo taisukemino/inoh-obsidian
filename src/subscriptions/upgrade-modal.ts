@@ -1,12 +1,12 @@
 import { App, Modal, Notice, Platform } from "obsidian";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { BILLING_URL } from "../constants";
 import { removeModalCloseButtons } from "../editor";
 import { openExternalUrl } from "../ui";
 import { formatPrice, planButtonLabel, yearlySavingPercent } from "./price-format";
 import {
   ActiveSubscriptionError,
   fetchTierPrices,
-  openBillingPortalUrl,
   startCheckout,
   TIER_DISPLAY_NAMES,
   UNKNOWN_TIER_PRICES,
@@ -133,7 +133,15 @@ export class UpgradeModal extends Modal {
     card.createDiv({ cls: "inoh-plan-pitch", text: TIER_PITCHES[tier] });
 
     const buttons = card.createDiv({ cls: "inoh-plan-buttons" });
-    this.renderCheckoutButton(buttons, "Yearly", tierPrices.year, savingPercent, tier, "year", true);
+    this.renderCheckoutButton(
+      buttons,
+      "Yearly",
+      tierPrices.year,
+      savingPercent,
+      tier,
+      "year",
+      true,
+    );
     this.renderCheckoutButton(buttons, "Monthly", tierPrices.month, null, tier, "month", false);
   }
 
@@ -184,7 +192,7 @@ export class UpgradeModal extends Modal {
       this.onCheckoutOpened();
     } catch (error) {
       if (error instanceof ActiveSubscriptionError) {
-        await this.openBillingPortal();
+        this.openBilling();
       } else {
         new Notice(error instanceof Error ? error.message : String(error));
       }
@@ -206,15 +214,12 @@ export class UpgradeModal extends Modal {
 
   /**
    * Fallback when Stripe already has a live subscription for this account —
-   * a second checkout would double-bill, so show the existing one instead.
+   * a second checkout would double-bill, so send them to Plan & Billing, where
+   * the existing one can be changed.
    */
-  private async openBillingPortal(): Promise<void> {
-    try {
-      openExternalUrl(await openBillingPortalUrl(this.supabase));
-      this.close();
-      this.onCheckoutOpened();
-    } catch (error) {
-      new Notice(error instanceof Error ? error.message : String(error));
-    }
+  private openBilling(): void {
+    openExternalUrl(BILLING_URL);
+    this.close();
+    this.onCheckoutOpened();
   }
 }
