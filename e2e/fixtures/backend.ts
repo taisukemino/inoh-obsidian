@@ -96,17 +96,11 @@ export const resetAccount = (options: {
   email: string;
   plan?: Plan;
   profile?: SeedProfile;
-  /** Pass false to leave the account without a username, hitting the onboarding gate. */
-  withUsername?: boolean;
-  /** For `card-cap`, seed this many cards instead of the plan's own cap. */
-  cards?: number;
 }): SeededAccount =>
   runFixtureCommand<SeededAccount>('reset-user', {
     email: options.email,
     plan: options.plan ?? 'free',
     profile: options.profile ?? 'learner',
-    ...(options.withUsername === false ? { 'no-username': 'true' } : {}),
-    ...(options.cards === undefined ? {} : { cards: String(options.cards) }),
   });
 
 /** Waits for the newest sign-in email and returns its six-digit code. */
@@ -119,6 +113,3 @@ export const readSignInCode = (email: string, sinceMs: number): string =>
 /** What the client actually wrote to the database. */
 export const readAccountState = (email: string): AccountState =>
   runFixtureCommand<AccountState>('state', { email });
-
-/** Empties one mailbox so the next code read is unambiguous. */
-export const clearMailbox = (email: string) => runFixtureCommand('clear-mail', { email });
