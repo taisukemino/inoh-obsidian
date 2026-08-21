@@ -6,7 +6,7 @@
 
 import { expect, test } from '@playwright/test';
 import {
-  checkLocalStack,
+  assertLocalStackReady,
   readAccountState,
   readSignInCode,
   resetAccount,
@@ -31,7 +31,7 @@ let session: ObsidianSession;
 let account: SeededAccount;
 
 test.beforeAll(async () => {
-  checkLocalStack();
+  assertLocalStackReady();
   account = resetAccount({ email: EMAIL, profile: 'learner' });
   session = await startObsidian();
 

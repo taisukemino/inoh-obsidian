@@ -8,6 +8,12 @@
  * to one npm package they would each have to install. Point
  * `INOH_BACKEND_DIR` at the backend checkout if it is not the sibling
  * directory.
+ *
+ * `AccountState` and `SeededAccount` mirror the CLI's whole JSON contract
+ * rather than only the fields this repo's specs read today. That is deliberate:
+ * the wrapper is a verbatim copy in every client repo, and trimming each copy
+ * to its current callers would make them diverge. The contract is documented
+ * once, in inoh-backend/supabase/e2e/README.md.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -89,7 +95,9 @@ function runFixtureCommand<T>(command: string, flags: Record<string, string> = {
 }
 
 /** Fails the run early, with the fix, when the local stack is not ready. */
-export const checkLocalStack = () => runFixtureCommand<{ ok: boolean }>('doctor');
+export const assertLocalStackReady = (): void => {
+  runFixtureCommand<{ ok: boolean }>('doctor');
+};
 
 /** Deletes, recreates, and seeds one account. */
 export const resetAccount = (options: {
