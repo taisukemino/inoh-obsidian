@@ -96,7 +96,9 @@ function runFixtureCommand<T>(command: string, flags: Record<string, string> = {
 
 /** Fails the run early, with the fix, when the local stack is not ready. */
 export const assertLocalStackReady = (): void => {
-  runFixtureCommand<{ ok: boolean }>('doctor');
+  // The CLI exits non-zero when a check fails, which runFixtureCommand turns
+  // into a throw — so reaching the next line is the assertion.
+  runFixtureCommand('doctor');
 };
 
 /** Deletes, recreates, and seeds one account. */
