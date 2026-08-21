@@ -12,7 +12,12 @@
     "format": "prettier --write src",
     "format:check": "prettier --check src",
     "test": "vitest run",
-    "dev:local": "APP_ENV=local node esbuild.config.mjs"
+    "dev:local": "APP_ENV=local node esbuild.config.mjs",
+    "e2e:fixture": "deno run --allow-env --allow-net ${INOH_BACKEND_DIR:-../inoh-backend}/supabase/e2e/cli.ts",
+    "e2e:doctor": "pnpm e2e:fixture doctor",
+    "e2e:build": "APP_ENV=local SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_PUBLISHABLE_KEY=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH OBSIDIAN_VAULT=./e2e/fixtures/vault node esbuild.config.mjs once",
+    "e2e:test": "playwright test -c e2e/playwright.config.ts",
+    "e2e:run": "pnpm e2e:doctor && pnpm e2e:build && pnpm e2e:test"
   },
   "keywords": [
     "obsidian",
@@ -28,6 +33,7 @@
     "@codemirror/state": "^6.7.1",
     "@codemirror/view": "^6.43.7",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
     "@types/fast-levenshtein": "^0.0.4",
     "esbuild": "^0.28.1",
     "eslint": "^10.8.1",

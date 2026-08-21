@@ -68,3 +68,27 @@ Implementation notes: the highlighter is a CodeMirror 6 view plugin that scans o
 ## License
 
 [MIT](LICENSE)
+
+## End-to-end tests
+
+Playwright drives the **real Obsidian app** over the Chrome DevTools Protocol,
+with the plugin built into a throwaway vault at `e2e/fixtures/vault` and a
+throwaway config directory — a run never touches your own vault or settings.
+The backend is a local Supabase stack.
+
+```bash
+cd ../inoh-backend && pnpm db:start     # once per session
+cd -                                     # back here
+pnpm e2e:run                             # doctor + build into the vault + test
+```
+
+Covered: the deck size in the status bar, deck words underlined in a note (and
+non-deck words left alone), the highlight toggle, and adding a selected word
+from the editor.
+
+Sign-in goes through the plugin's real settings tab and sign-in modal. Worth
+knowing if you extend the suite: Obsidian 1.13 renders Settings in a **separate
+window**, so it shows up as a second CDP page — `app.setting.open()` looks like
+it does nothing if you only inspect the window you started from.
+
+See [inoh-backend/E2E.md](../inoh-backend/E2E.md) for the cross-client picture.

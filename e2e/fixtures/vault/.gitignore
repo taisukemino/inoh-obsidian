@@ -1,0 +1,7 @@
+# The plugin bundle is built into the vault by `pnpm e2e:build`.
+.obsidian/plugins/
+.obsidian/workspace.json
+.obsidian/appearance.json
+# Notes the specs create as they run.
+reading.md
+capture.md

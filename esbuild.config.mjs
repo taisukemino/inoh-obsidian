@@ -5,6 +5,10 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 const isProductionBuild = process.argv.includes("production");
+// A one-shot dev build: the same local-pointing bundle `dev` produces, written
+// into the vault and then exiting instead of watching, so an e2e run can build
+// the plugin and go on to launch Obsidian.
+const isOneShotBuild = process.argv.includes("once");
 
 // Mirrors the Inoh app's APP_ENV convention: `.env.<APP_ENV>` selects the
 // backend, and a plain `.env` holds per-machine settings (the vault path).
@@ -132,7 +136,7 @@ const buildContext = await esbuild.context({
   plugins: [copyPluginAssetsPlugin],
 });
 
-if (isProductionBuild) {
+if (isProductionBuild || isOneShotBuild) {
   await buildContext.rebuild();
   await buildContext.dispose();
 } else {
