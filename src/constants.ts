@@ -18,11 +18,8 @@ export const CHECKOUT_CANCEL_URL = `${WEB_APP_URL}/checkout-cancel?from=obsidian
  */
 export const BILLING_URL = `${WEB_APP_URL}/billing`;
 
-/**
- * Product pages for the other Inoh ecosystem apps, shown in the Apps settings
- * group. The iOS app (mid-rebrand) has no URL yet and renders as
- * "Coming soon" — add its constant once live.
- */
+/** Product pages for the other Inoh ecosystem apps, shown in the Apps settings group. */
+export const IOS_APP_URL = "https://apps.apple.com/app/id6799947889";
 export const CHROME_EXTENSION_URL =
   "https://chromewebstore.google.com/detail/fihdhfkhbocbgmnhdigkljknabnjeoai?utm_source=item-share-cb";
 export const RAYCAST_EXTENSION_URL = "https://www.raycast.com/tai/inoh";

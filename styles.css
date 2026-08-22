@@ -350,11 +350,6 @@ button.inoh-modal-link:hover {
 }
 
 /* Unreleased app rows: muted label where the control would sit. */
-.inoh-coming-soon {
-  color: var(--text-muted);
-  font-size: var(--font-ui-small);
-}
-
 /* Sense picker: one button per dictionary sense of the selected word. */
 .inoh-sense-picker-hint {
   margin-top: 0;
